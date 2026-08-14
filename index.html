@@ -22,6 +22,9 @@
     --signal: #FFD166;
     --mist: #A8AEC1;
     --radius: 18px;
+    --daily: #7FBF8E;
+    --weekly: #6FA8DC;
+    --monthly: #B18CE0;
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body{ height:100%; }
@@ -53,22 +56,13 @@
     justify-content:space-between;
     padding:20px 20px 12px;
   }
-  header.top .brand{
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
+  header.top .brand{ display:flex; align-items:center; gap:10px; }
   header.top .mark{
     width:26px;height:26px;border-radius:50%;
     background:conic-gradient(var(--ember) 0 65%, var(--ink-softer) 65% 100%);
-    position:relative;
-    flex-shrink:0;
+    position:relative; flex-shrink:0;
   }
-  header.top .mark::after{
-    content:"";
-    position:absolute; inset:6px;
-    background:var(--paper); border-radius:50%;
-  }
+  header.top .mark::after{ content:""; position:absolute; inset:6px; background:var(--paper); border-radius:50%; }
   header.top .brand-name{ font-size:19px; font-weight:700; letter-spacing:-0.01em; }
   header.top .date{ font-size:13px; color:var(--mist); }
 
@@ -77,12 +71,12 @@
   .view.active{ display:block; }
   @keyframes fadein{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
 
-  /* ---- Tasks list ---- */
-  .list-head{
-    display:flex; align-items:center; gap:8px;
-    margin-bottom:12px;
-    padding-left:2px;
-  }
+  /* ---- Task lists (Daily / Weekly / Monthly / one-off) ---- */
+  .list-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; padding-left:2px; }
+  .list-head .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .dot-daily{ background:var(--daily); }
+  .dot-weekly{ background:var(--weekly); }
+  .dot-monthly{ background:var(--monthly); }
   .list-head h2{ font-size:14px; margin:0; text-transform:uppercase; letter-spacing:.08em; color:var(--mist); font-weight:600; }
   .list-head .count{ font-size:12px; color:var(--mist); margin-left:auto; }
   .list-hint{ font-size:12.5px; color:var(--mist); margin:-4px 0 14px 2px; line-height:1.5; }
@@ -91,11 +85,15 @@
 
   .card-wrap{ position:relative; border-radius:var(--radius); overflow:hidden; }
   .card-swipe-bg{
-    position:absolute; inset:0; background:var(--moss); color:var(--ink);
+    position:absolute; inset:0; color:var(--ink);
     display:flex; align-items:center; justify-content:center; gap:8px;
     font-weight:700; font-size:14px; opacity:0; pointer-events:none;
   }
   .card-swipe-bg svg{ width:20px; height:20px; }
+  .card-swipe-bg.accent-daily{ background:var(--daily); }
+  .card-swipe-bg.accent-weekly{ background:var(--weekly); }
+  .card-swipe-bg.accent-monthly{ background:var(--monthly); }
+  .card-swipe-bg.accent-oneoff{ background:var(--moss); }
 
   .card{
     position:relative;
@@ -103,23 +101,23 @@
     border-radius:var(--radius);
     padding:14px 16px;
     border:1px solid transparent;
+    border-left:3px solid transparent;
     touch-action:pan-y;
     will-change:transform;
   }
+  .card.accent-daily{ border-left-color:var(--daily); }
+  .card.accent-weekly{ border-left-color:var(--weekly); }
+  .card.accent-monthly{ border-left-color:var(--monthly); }
+  .card.accent-oneoff{ border-left-color:var(--ember); }
+
   .card-title{ font-size:15.5px; font-weight:500; line-height:1.35; }
   .card-meta{ display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
-  .badge{
-    font-size:11.5px; padding:3px 8px; border-radius:100px;
-    background:var(--ink-softer); color:var(--mist);
-  }
+  .badge{ font-size:11.5px; padding:3px 8px; border-radius:100px; background:var(--ink-softer); color:var(--mist); }
   .badge.due{ background:var(--ink-softer); color:var(--mist); }
   .badge.due.due-soon{ background:#3a3320; color:var(--signal); }
   .badge.due.due-overdue{ background:#40241f; color:#ff9d85; }
 
-  .empty{
-    color:var(--mist); font-size:13.5px;
-    padding:16px 2px; line-height:1.5;
-  }
+  .empty{ color:var(--mist); font-size:13.5px; padding:16px 2px; line-height:1.5; }
 
   .fab{
     position:fixed;
@@ -134,7 +132,7 @@
   }
   .fab:active{ transform:scale(0.94); }
 
-  /* ---- Nav ---- */
+  /* ---- Bottom nav ---- */
   nav.tabs{
     position:fixed; left:0; right:0; bottom:0;
     background:rgba(27,31,59,0.92);
@@ -147,83 +145,76 @@
   nav.tabs .wrap{ max-width:480px; margin:0 auto; display:flex; width:100%; }
   nav.tabs button{
     flex:1; background:none; border:none; color:var(--mist);
-    font-family:'Inter'; font-size:12px; font-weight:500;
+    font-family:'Inter'; font-size:11.5px; font-weight:500;
     padding:12px 0 10px; display:flex; flex-direction:column; align-items:center; gap:5px;
   }
-  nav.tabs button svg{ width:22px; height:22px; }
+  nav.tabs button svg{ width:21px; height:21px; }
   nav.tabs button.active{ color:var(--paper); }
   nav.tabs button.active svg{ stroke:var(--ember); }
+  nav.tabs button.active[data-view="daily"]{ color:var(--daily); }
+  nav.tabs button.active[data-view="daily"] svg{ stroke:var(--daily); }
+  nav.tabs button.active[data-view="weekly"]{ color:var(--weekly); }
+  nav.tabs button.active[data-view="weekly"] svg{ stroke:var(--weekly); }
+  nav.tabs button.active[data-view="monthly"]{ color:var(--monthly); }
+  nav.tabs button.active[data-view="monthly"] svg{ stroke:var(--monthly); }
 
-  /* ---- Focus view ---- */
-  .focus-wrap{ display:flex; flex-direction:column; align-items:center; padding-top:18px; }
+  /* ---- Focus tab: sub-toggle + timer ---- */
+  .focus-toggle{ display:flex; gap:8px; margin-bottom:18px; }
+  .sub-btn{
+    flex:1; background:var(--ink-soft); color:var(--mist); border:1px solid var(--ink-softer);
+    padding:10px; border-radius:100px; font-family:'Inter'; font-weight:600; font-size:13.5px;
+  }
+  .sub-btn.active{ background:var(--ember); color:var(--ink); border-color:var(--ember); }
+  .focus-sub{ display:none; }
+  .focus-sub.active{ display:block; }
+
+  .focus-wrap{ display:flex; flex-direction:column; align-items:center; padding-top:6px; }
   .ring-holder{ position:relative; width:250px; height:250px; margin:6px 0 22px; }
   .ring-holder svg{ width:100%; height:100%; transform:rotate(-90deg); }
   .ring-track{ fill:none; stroke:var(--ink-softer); stroke-width:14; }
   .ring-progress{ fill:none; stroke:var(--ember); stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke .3s ease; }
   .ring-progress.break{ stroke:var(--moss); }
-  .ring-center{
-    position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:4px;
-  }
+  .ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
   .ring-time{ font-size:42px; font-weight:600; letter-spacing:-0.02em; }
   .ring-label{ font-size:12.5px; color:var(--mist); text-transform:uppercase; letter-spacing:.08em; }
 
-  .focus-task{
-    font-size:16px; font-weight:500; text-align:center;
-    max-width:280px; min-height:24px; margin-bottom:4px;
-  }
+  .focus-task{ font-size:16px; font-weight:500; text-align:center; max-width:280px; min-height:24px; margin-bottom:4px; }
   .focus-hint{ font-size:13px; color:var(--mist); text-align:center; max-width:280px; margin-bottom:22px; }
-  .focus-hint button.link{
-    background:none; border:none; color:var(--ember); font-weight:600;
-    font-size:13px; padding:0; text-decoration:underline;
-  }
+  .focus-hint button.link{ background:none; border:none; color:var(--ember); font-weight:600; font-size:13px; padding:0; text-decoration:underline; }
 
   .chip-row{ display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap; justify-content:center; }
-  .chip{
-    background:var(--ink-soft); color:var(--mist); border:1px solid var(--ink-softer);
-    padding:7px 14px; border-radius:100px; font-size:13px; font-weight:500;
-  }
+  .chip{ background:var(--ink-soft); color:var(--mist); border:1px solid var(--ink-softer); padding:7px 14px; border-radius:100px; font-size:13px; font-weight:500; }
   .chip.active{ background:var(--ember); color:var(--ink); border-color:var(--ember); }
   .chip:disabled{ opacity:.5; }
 
   .focus-controls{ display:flex; gap:12px; margin-bottom:26px; }
-  .btn{
-    font-family:'Inter'; font-weight:600; font-size:14.5px;
-    padding:13px 26px; border-radius:100px; border:none;
-  }
+  .btn{ font-family:'Inter'; font-weight:600; font-size:14.5px; padding:13px 26px; border-radius:100px; border:none; }
   .btn-primary{ background:var(--ember); color:var(--ink); }
   .btn-ghost{ background:var(--ink-soft); color:var(--paper); border:1px solid var(--ink-softer); }
   .btn:active{ transform:scale(0.96); }
 
-  .session-count{ font-size:13px; color:var(--mist); }
+  .session-count{ font-size:13px; color:var(--mist); text-align:center; }
   .session-count b{ color:var(--paper); }
 
   /* ---- Sheet / modal ---- */
-  .scrim{
-    position:fixed; inset:0; background:rgba(10,12,26,.55);
-    display:none; align-items:flex-end; z-index:30;
-  }
+  .scrim{ position:fixed; inset:0; background:rgba(10,12,26,.55); display:none; align-items:flex-end; z-index:30; }
   .scrim.show{ display:flex; }
   .sheet{
-    background:var(--ink-soft);
-    width:100%; max-width:480px; margin:0 auto;
-    border-radius:24px 24px 0 0;
-    padding:22px 20px calc(24px + env(safe-area-inset-bottom));
-    animation:slideup .22s ease;
-    max-height:88vh;
-    overflow-y:auto;
+    background:var(--ink-soft); width:100%; max-width:480px; margin:0 auto;
+    border-radius:24px 24px 0 0; padding:22px 20px calc(24px + env(safe-area-inset-bottom));
+    animation:slideup .22s ease; max-height:88vh; overflow-y:auto;
   }
   @keyframes slideup{ from{ transform:translateY(30px); opacity:0;} to{ transform:none; opacity:1;} }
-  .sheet h3{ margin:0 0 16px; font-size:17px; }
+  .sheet h3{ margin:0 0 4px; font-size:17px; }
+  .sheet .subhead{ font-size:12.5px; color:var(--mist); margin:0 0 16px; }
   .field{ margin-bottom:14px; }
   .field label{ display:block; font-size:12.5px; color:var(--mist); margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; }
-  .field input, .field textarea, .field select{
+  .field input, .field textarea{
     width:100%; background:var(--ink); border:1px solid var(--ink-softer);
     color:var(--paper); border-radius:12px; padding:12px 14px;
     font-family:'Inter'; font-size:15px; resize:none;
   }
-  .field input:focus, .field textarea:focus, .field select:focus{ outline:2px solid var(--ember); outline-offset:1px; }
-  .field select{ appearance:none; -webkit-appearance:none; }
+  .field input:focus, .field textarea:focus{ outline:2px solid var(--ember); outline-offset:1px; }
   .sheet-actions{ display:flex; gap:10px; margin-top:6px; }
   .sheet-actions .btn{ flex:1; }
   .sheet-secondary-row{ display:flex; gap:10px; margin-top:10px; }
@@ -239,11 +230,9 @@
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
 
   ::selection{ background:var(--ember); color:var(--ink); }
-  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{ outline:2px solid var(--ember); outline-offset:2px; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible{ outline:2px solid var(--ember); outline-offset:2px; }
 
-  @media (prefers-reduced-motion: reduce){
-    *{ animation:none !important; transition:none !important; }
-  }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
@@ -259,48 +248,74 @@
 
   <main>
 
-    <!-- TASKS -->
-    <section class="view active" id="view-tasks">
-      <div class="list-head"><h2>Tasks</h2><span class="count" id="taskCount">0</span></div>
-      <div class="list-hint">Swipe a task either direction to mark it done. Tap it to edit, set a reminder, or start a focus session.</div>
-      <div class="cards" id="cards-tasks"></div>
+    <!-- DAILY -->
+    <section class="view active" id="view-daily">
+      <div class="list-head"><span class="dot dot-daily"></span><h2>Daily</h2><span class="count" id="count-daily">0</span></div>
+      <div class="list-hint">Swipe done to clear it — it'll quietly come back tomorrow.</div>
+      <div class="cards" id="cards-daily"></div>
     </section>
 
-    <!-- FOCUS -->
+    <!-- WEEKLY -->
+    <section class="view" id="view-weekly">
+      <div class="list-head"><span class="dot dot-weekly"></span><h2>Weekly</h2><span class="count" id="count-weekly">0</span></div>
+      <div class="list-hint">Swipe done to clear it — it'll come back next week.</div>
+      <div class="cards" id="cards-weekly"></div>
+    </section>
+
+    <!-- MONTHLY -->
+    <section class="view" id="view-monthly">
+      <div class="list-head"><span class="dot dot-monthly"></span><h2>Monthly</h2><span class="count" id="count-monthly">0</span></div>
+      <div class="list-hint">Swipe done to clear it — it'll come back next month.</div>
+      <div class="cards" id="cards-monthly"></div>
+    </section>
+
+    <!-- FOCUS: one-off tasks + Pomodoro timer -->
     <section class="view" id="view-focus">
-      <div class="focus-wrap">
+      <div class="focus-toggle">
+        <button class="sub-btn active" data-sub="tasks">Tasks</button>
+        <button class="sub-btn" data-sub="timer">Timer</button>
+      </div>
 
-        <div class="ring-holder">
-          <svg viewBox="0 0 240 240">
-            <circle class="ring-track" cx="120" cy="120" r="105"></circle>
-            <circle class="ring-progress" id="ringProgress" cx="120" cy="120" r="105"
-              stroke-dasharray="659.7" stroke-dashoffset="0"></circle>
-          </svg>
-          <div class="ring-center">
-            <div class="ring-time mono" id="ringTime">25:00</div>
-            <div class="ring-label" id="ringLabel">Focus</div>
+      <div class="focus-sub active" id="sub-tasks">
+        <div class="list-head"><h2>One-off tasks</h2><span class="count" id="count-oneoff">0</span></div>
+        <div class="list-hint">Things that need a chunk of time, not a repeat schedule. Swipe done to clear one.</div>
+        <div class="cards" id="cards-oneoff"></div>
+      </div>
+
+      <div class="focus-sub" id="sub-timer">
+        <div class="focus-wrap">
+          <div class="ring-holder">
+            <svg viewBox="0 0 240 240">
+              <circle class="ring-track" cx="120" cy="120" r="105"></circle>
+              <circle class="ring-progress" id="ringProgress" cx="120" cy="120" r="105"
+                stroke-dasharray="659.7" stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="ring-center">
+              <div class="ring-time mono" id="ringTime">25:00</div>
+              <div class="ring-label" id="ringLabel">Focus</div>
+            </div>
           </div>
-        </div>
 
-        <div class="focus-task" id="focusTaskName">No task selected</div>
-        <div class="focus-hint" id="focusHint">
-          Pick something from your tasks, or just start the timer —
-          <button class="link" id="pickTaskBtn">choose a task</button>
-        </div>
+          <div class="focus-task" id="focusTaskName">No task selected</div>
+          <div class="focus-hint" id="focusHint">
+            Pick a one-off task, or just start the timer —
+            <button class="link" id="pickTaskBtn">choose a task</button>
+          </div>
 
-        <div class="chip-row" id="durationChips">
-          <button class="chip active" data-min="25">25 min</button>
-          <button class="chip" data-min="50">50 min</button>
-          <button class="chip" data-min="10">10 min</button>
-          <button class="chip" data-min="5" data-break="1">5 min break</button>
-        </div>
+          <div class="chip-row" id="durationChips">
+            <button class="chip active" data-min="25">25 min</button>
+            <button class="chip" data-min="50">50 min</button>
+            <button class="chip" data-min="10">10 min</button>
+            <button class="chip" data-min="5" data-break="1">5 min break</button>
+          </div>
 
-        <div class="focus-controls">
-          <button class="btn btn-primary" id="startPauseBtn">Start</button>
-          <button class="btn btn-ghost" id="resetBtn">Reset</button>
-        </div>
+          <div class="focus-controls">
+            <button class="btn btn-primary" id="startPauseBtn">Start</button>
+            <button class="btn btn-ghost" id="resetBtn">Reset</button>
+          </div>
 
-        <div class="session-count"><b id="sessionCount">0</b> focus sessions today</div>
+          <div class="session-count"><b id="sessionCount">0</b> focus sessions today</div>
+        </div>
       </div>
     </section>
 
@@ -310,12 +325,17 @@
 
   <nav class="tabs">
     <div class="wrap">
-      <button class="tab-btn active" data-view="tasks">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/>
-          <path d="M4 6l1 1 2-2"/><path d="M4 12l1 1 2-2"/><path d="M4 18l1 1 2-2"/>
-        </svg>
-        Tasks
+      <button class="tab-btn active" data-view="daily">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        Daily
+      </button>
+      <button class="tab-btn" data-view="weekly">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><rect x="5" y="12.5" width="14" height="3" rx="1" fill="currentColor" stroke="none" opacity=".55"/></svg>
+        Weekly
+      </button>
+      <button class="tab-btn" data-view="monthly">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="7.5" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="16.5" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="7.5" cy="17.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="17.5" r="1" fill="currentColor" stroke="none"/></svg>
+        Monthly
       </button>
       <button class="tab-btn" data-view="focus">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v4.7l3 2" stroke-linecap="round"/></svg>
@@ -327,27 +347,19 @@
   <!-- Add task sheet -->
   <div class="scrim" id="addScrim">
     <div class="sheet">
-      <h3>New task</h3>
+      <h3 id="addTitle">New task</h3>
+      <div class="subhead" id="addSubhead"></div>
       <div class="field">
         <label for="taskTitle">What's the task?</label>
         <input id="taskTitle" type="text" placeholder="e.g. Reply to landlord email" maxlength="120">
       </div>
-      <div class="field">
+      <div class="field" id="estimateField">
         <label for="taskEstimate">Time estimate (minutes, optional)</label>
         <input id="taskEstimate" type="number" inputmode="numeric" placeholder="15" min="1" max="480">
       </div>
       <div class="field">
-        <label for="taskDue">Due &amp; remind me (optional)</label>
+        <label for="taskDue" id="dueLabel">Due &amp; remind me (optional)</label>
         <input id="taskDue" type="datetime-local">
-      </div>
-      <div class="field">
-        <label for="taskRepeat">Repeat</label>
-        <select id="taskRepeat">
-          <option value="">Doesn't repeat</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
       </div>
       <div class="sheet-actions">
         <button class="btn btn-ghost" id="cancelAdd">Cancel</button>
@@ -362,19 +374,10 @@
       <h3 id="detailTitle">Task</h3>
       <div id="detailMeta" class="focus-hint" style="text-align:left; margin-bottom:14px; max-width:none;"></div>
       <div class="field">
-        <label for="detailDue">Due &amp; remind me</label>
+        <label for="detailDue" id="detailDueLabel">Due &amp; remind me</label>
         <input id="detailDue" type="datetime-local">
       </div>
-      <div class="field">
-        <label for="detailRepeat">Repeat</label>
-        <select id="detailRepeat">
-          <option value="">Doesn't repeat</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
-      </div>
-      <div class="sheet-secondary-row" style="margin-top:0; margin-bottom:16px;">
+      <div class="sheet-secondary-row" id="detailDueActions" style="margin-top:0; margin-bottom:16px;">
         <button class="btn btn-ghost" id="saveDetailDue">Save</button>
         <button class="btn btn-ghost" id="clearDetailDue">Clear due date</button>
       </div>
@@ -406,23 +409,17 @@
   }
   function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
-  // One-time migration: carry over data from the old "Lanturn" name, and
-  // from the earlier Board/Doing/Done task shape, so nobody loses tasks.
+  // One-time migration from older Lanturn/Squig shapes so nobody loses tasks.
   (function migrateOldData(){
-    if(localStorage.getItem(STORE_KEY) !== null) return; // already migrated
-
+    if(localStorage.getItem(STORE_KEY) !== null) return;
     const oldSessions = localStorage.getItem('lanturn.sessions.v1');
     if(oldSessions !== null && localStorage.getItem(SESS_KEY) === null){
       localStorage.setItem(SESS_KEY, oldSessions);
     }
-
-    // Try both the v1 Squig task shape and the original Lanturn shape.
     const oldTasksRaw = localStorage.getItem('squig.tasks.v1') || localStorage.getItem('lanturn.tasks.v1');
     if(!oldTasksRaw) return;
     try{
       const oldTasks = JSON.parse(oldTasksRaw) || [];
-      // Drop anything already marked done (no more Done list), strip the
-      // retired column/startedAt fields.
       const migrated = oldTasks
         .filter(t => t.column !== 'done')
         .map(t => ({
@@ -435,7 +432,7 @@
   })();
 
   let tasks = load(STORE_KEY, []);
-  let sessions = load(SESS_KEY, []); // {date:'YYYY-MM-DD'}
+  let sessions = load(SESS_KEY, []);
 
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
   function todayStr(){ return new Date().toISOString().slice(0,10); }
@@ -453,24 +450,44 @@
   /* ---------- header date ---------- */
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined,{ weekday:'short', month:'short', day:'numeric' });
 
-  /* ---------- tabs ---------- */
-  const views = { tasks: document.getElementById('view-tasks'), focus: document.getElementById('view-focus') };
+  /* ---------- main tabs ---------- */
+  const views = {
+    daily: document.getElementById('view-daily'),
+    weekly: document.getElementById('view-weekly'),
+    monthly: document.getElementById('view-monthly'),
+    focus: document.getElementById('view-focus')
+  };
+  let currentMainTab = 'daily';
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       Object.values(views).forEach(v=>v.classList.remove('active'));
       views[btn.dataset.view].classList.add('active');
+      currentMainTab = btn.dataset.view;
     });
   });
 
-  function fmtMin(m){ return m + 'm'; }
+  /* ---------- focus sub-toggle (Tasks / Timer) ---------- */
+  const focusSubs = { tasks: document.getElementById('sub-tasks'), timer: document.getElementById('sub-timer') };
+  function setFocusSub(name){
+    document.querySelectorAll('.sub-btn').forEach(b=> b.classList.toggle('active', b.dataset.sub === name));
+    Object.entries(focusSubs).forEach(([k,el])=> el.classList.toggle('active', k === name));
+  }
+  document.querySelectorAll('.sub-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> setFocusSub(btn.dataset.sub));
+  });
 
-  /* ---------- repeating tasks ---------- */
-  function repeatLabel(r){
-    return r === 'daily' ? 'Daily' : r === 'weekly' ? 'Weekly' : r === 'monthly' ? 'Monthly' : '';
+  function goToFocusTimer(id){
+    selectedTaskId = id;
+    document.querySelector('.tab-btn[data-view="focus"]').click();
+    setFocusSub('timer');
+    updateFocusTaskLabel();
   }
 
+  function fmtMin(m){ return m + 'm'; }
+
+  /* ---------- repeat scheduling ---------- */
   function advanceDate(base, repeat){
     const d = new Date(base);
     if(repeat === 'daily') d.setDate(d.getDate() + 1);
@@ -480,7 +497,7 @@
   }
 
   /* ---------- due dates ---------- */
-  const DUE_SOON_MS = 60 * 60 * 1000; // badge turns amber inside 1 hour
+  const DUE_SOON_MS = 60 * 60 * 1000;
 
   function fmtDue(iso){
     const d = new Date(iso);
@@ -501,7 +518,19 @@
     return '';
   }
 
-  // datetime-local wants "YYYY-MM-DDTHH:mm" in local time, not UTC ISO
+  // A repeating task's next occurrence is scheduled the moment the current
+  // one is swiped done, but stays out of its tab until actually due — so
+  // swiping it away makes it genuinely disappear, not just re-date itself.
+  function isDueTodayOrPast(iso){
+    const d = new Date(iso);
+    const now = new Date();
+    return d.getTime() <= now.getTime() || d.toDateString() === now.toDateString();
+  }
+  function isVisible(t){
+    if(!t.repeat || !t.dueAt) return true;
+    return isDueTodayOrPast(t.dueAt);
+  }
+
   function toDatetimeLocalValue(iso){
     const d = new Date(iso);
     const pad = n => n.toString().padStart(2,'0');
@@ -509,33 +538,44 @@
       + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
-  /* ---------- sorting & render ---------- */
-  function sortedTasks(){
-    return tasks.slice().sort((a,b)=>{
-      if(a.dueAt && b.dueAt) return new Date(a.dueAt) - new Date(b.dueAt);
-      if(a.dueAt) return -1;
-      if(b.dueAt) return 1;
-      return (b.createdAt || '').localeCompare(a.createdAt || '');
-    });
+  /* ---------- render ---------- */
+  function byDueAsc(a,b){ return new Date(a.dueAt) - new Date(b.dueAt); }
+  function byDueThenNewest(a,b){
+    if(a.dueAt && b.dueAt) return new Date(a.dueAt) - new Date(b.dueAt);
+    if(a.dueAt) return -1;
+    if(b.dueAt) return 1;
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
   }
 
   function render(){
-    const list = sortedTasks();
-    document.getElementById('taskCount').textContent = list.length;
-    renderList(list);
+    const daily = tasks.filter(t=> t.repeat==='daily' && isVisible(t)).sort(byDueAsc);
+    const weekly = tasks.filter(t=> t.repeat==='weekly' && isVisible(t)).sort(byDueAsc);
+    const monthly = tasks.filter(t=> t.repeat==='monthly' && isVisible(t)).sort(byDueAsc);
+    const oneoff = tasks.filter(t=> !t.repeat).sort(byDueThenNewest);
+
+    document.getElementById('count-daily').textContent = daily.length;
+    document.getElementById('count-weekly').textContent = weekly.length;
+    document.getElementById('count-monthly').textContent = monthly.length;
+    document.getElementById('count-oneoff').textContent = oneoff.length;
+
+    renderCards('cards-daily', daily, 'daily', 'Nothing due today. Nice.');
+    renderCards('cards-weekly', weekly, 'weekly', 'Nothing due this week yet.');
+    renderCards('cards-monthly', monthly, 'monthly', 'Nothing due this month yet.');
+    renderCards('cards-oneoff', oneoff, 'oneoff', 'Nothing here yet — tap + whenever you\'re ready.');
+
     renderTaskPicker();
     save(STORE_KEY, tasks);
   }
 
   const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
 
-  function renderList(list){
-    const el = document.getElementById('cards-tasks');
+  function renderCards(elId, list, accent, emptyText){
+    const el = document.getElementById(elId);
     el.innerHTML = '';
     if(list.length === 0){
       const p = document.createElement('div');
       p.className = 'empty';
-      p.textContent = 'Nothing here yet — tap + whenever you\'re ready.';
+      p.textContent = emptyText;
       el.appendChild(p);
       return;
     }
@@ -544,12 +584,12 @@
       wrap.className = 'card-wrap';
 
       const bg = document.createElement('div');
-      bg.className = 'card-swipe-bg';
+      bg.className = 'card-swipe-bg accent-' + accent;
       bg.innerHTML = CHECK_SVG + '<span>Done</span>';
       wrap.appendChild(bg);
 
       const card = document.createElement('div');
-      card.className = 'card';
+      card.className = 'card accent-' + accent;
 
       const title = document.createElement('div');
       title.className = 'card-title';
@@ -570,12 +610,6 @@
         due.className = 'badge due mono' + (state ? ' ' + state : '');
         due.textContent = (state === 'due-overdue' ? 'was due ' : 'due ') + fmtDue(t.dueAt);
         meta.appendChild(due);
-      }
-      if(t.repeat){
-        const rep = document.createElement('span');
-        rep.className = 'badge mono';
-        rep.textContent = '↻ ' + repeatLabel(t.repeat);
-        meta.appendChild(rep);
       }
       card.appendChild(meta);
       wrap.appendChild(card);
@@ -662,15 +696,32 @@
     toast(msg);
   }
 
-  /* ---------- add task ---------- */
+  /* ---------- add task (context-aware: daily / weekly / monthly / oneoff) ---------- */
   const addScrim = document.getElementById('addScrim');
-  document.getElementById('fabAdd').addEventListener('click', ()=>{
+  let addContext = 'oneoff';
+
+  const ADD_COPY = {
+    daily:   { title:'New daily task',   sub:'Repeats every day.',    due:'What time, every day?' },
+    weekly:  { title:'New weekly task',  sub:'Repeats every week.',   due:'First occurrence — day & time' },
+    monthly: { title:'New monthly task', sub:'Repeats every month.',  due:'First occurrence — date & time' },
+    oneoff:  { title:'New task',         sub:'A one-off — no repeat.', due:'Due & remind me (optional)' }
+  };
+
+  function openAddSheet(ctx){
+    addContext = ctx;
+    const copy = ADD_COPY[ctx];
+    document.getElementById('addTitle').textContent = copy.title;
+    document.getElementById('addSubhead').textContent = copy.sub;
+    document.getElementById('dueLabel').textContent = copy.due;
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskEstimate').value = '';
     document.getElementById('taskDue').value = '';
-    document.getElementById('taskRepeat').value = '';
     addScrim.classList.add('show');
     setTimeout(()=> document.getElementById('taskTitle').focus(), 150);
+  }
+
+  document.getElementById('fabAdd').addEventListener('click', ()=>{
+    openAddSheet(currentMainTab === 'focus' ? 'oneoff' : currentMainTab);
   });
   document.getElementById('cancelAdd').addEventListener('click', ()=> addScrim.classList.remove('show'));
   addScrim.addEventListener('click', (e)=>{ if(e.target === addScrim) addScrim.classList.remove('show'); });
@@ -680,8 +731,9 @@
     if(!title){ toast('Give it a name first'); return; }
     const est = parseInt(document.getElementById('taskEstimate').value, 10);
     const dueVal = document.getElementById('taskDue').value;
+    const repeat = addContext === 'oneoff' ? null : addContext;
+    if(repeat && !dueVal){ toast('Pick a time so this has something to repeat from'); return; }
     const dueAt = dueVal ? new Date(dueVal).toISOString() : null;
-    const repeat = document.getElementById('taskRepeat').value || null;
     tasks.push({
       id: uid(),
       title,
@@ -692,6 +744,7 @@
       repeat
     });
     addScrim.classList.remove('show');
+    if(currentMainTab === 'focus') setFocusSub('tasks');
     render();
     toast('Added');
     if(dueAt) ensureNotificationPermission();
@@ -710,7 +763,12 @@
       ? ('Estimated ' + t.estimateMin + ' min')
       : 'No time estimate';
     document.getElementById('detailDue').value = t.dueAt ? toDatetimeLocalValue(t.dueAt) : '';
-    document.getElementById('detailRepeat').value = t.repeat || '';
+    document.getElementById('detailDueLabel').textContent = t.repeat
+      ? 'Due & remind me (next occurrence)'
+      : 'Due & remind me';
+    // Clearing the due date on a repeating task would break its schedule,
+    // so that option only shows for one-off tasks.
+    document.getElementById('clearDetailDue').style.display = t.repeat ? 'none' : '';
     detailScrim.classList.add('show');
   }
 
@@ -718,15 +776,12 @@
     const t = tasks.find(x=>x.id===activeTaskId);
     if(!t) return;
     const val = document.getElementById('detailDue').value;
-    const repeat = document.getElementById('detailRepeat').value || null;
-    if(!val && repeat){ toast('Add a due date so repeats have a time to anchor to'); return; }
     if(!val){ toast('Pick a date and time first'); return; }
     t.dueAt = new Date(val).toISOString();
     t.notified = false;
-    t.repeat = repeat;
     render();
     ensureNotificationPermission();
-    toast(repeat ? 'Saved · repeats ' + repeatLabel(repeat).toLowerCase() : 'Reminder set');
+    toast('Saved');
   });
 
   document.getElementById('clearDetailDue').addEventListener('click', ()=>{
@@ -734,9 +789,7 @@
     if(!t) return;
     t.dueAt = null;
     t.notified = false;
-    t.repeat = null;
     document.getElementById('detailDue').value = '';
-    document.getElementById('detailRepeat').value = '';
     render();
     toast('Reminder cleared');
   });
@@ -754,10 +807,9 @@
   });
 
   document.getElementById('startFocusFromDetail').addEventListener('click', ()=>{
-    selectedTaskId = activeTaskId;
+    const id = activeTaskId;
     detailScrim.classList.remove('show');
-    document.querySelector('.tab-btn[data-view="focus"]').click();
-    updateFocusTaskLabel();
+    goToFocusTimer(id);
   });
 
   detailScrim.addEventListener('click', (e)=>{ if(e.target === detailScrim) detailScrim.classList.remove('show'); });
@@ -781,17 +833,13 @@
       if(t){
         nameEl.textContent = t.title;
         hintEl.innerHTML = 'Working on this one. <button class="link" id="pickTaskBtn2">Change task</button>';
-        document.getElementById('pickTaskBtn2').addEventListener('click', ()=>{
-          document.querySelector('.tab-btn[data-view="tasks"]').click();
-        });
+        document.getElementById('pickTaskBtn2').addEventListener('click', ()=> setFocusSub('tasks'));
         return;
       }
     }
     nameEl.textContent = 'No task selected';
-    hintEl.innerHTML = 'Pick something from your tasks, or just start the timer — <button class="link" id="pickTaskBtn">choose a task</button>';
-    document.getElementById('pickTaskBtn').addEventListener('click', ()=>{
-      document.querySelector('.tab-btn[data-view="tasks"]').click();
-    });
+    hintEl.innerHTML = 'Pick a one-off task, or just start the timer — <button class="link" id="pickTaskBtn">choose a task</button>';
+    document.getElementById('pickTaskBtn').addEventListener('click', ()=> setFocusSub('tasks'));
   }
   updateFocusTaskLabel();
 
@@ -878,15 +926,9 @@
   updateSessionCount();
 
   /* ---------- reminders ---------- */
-  // Best-effort local reminders. These fire while Squig is open (foreground
-  // or backgrounded tab) via the Notification API. True background delivery
-  // when the app is fully closed needs server-sent Push, which isn't
-  // available for a plain static/local-storage app like this one.
   function ensureNotificationPermission(){
     if(!('Notification' in window)) return;
-    if(Notification.permission === 'default'){
-      Notification.requestPermission();
-    }
+    if(Notification.permission === 'default'){ Notification.requestPermission(); }
   }
 
   function fireReminder(t){

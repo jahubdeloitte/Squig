@@ -1,4 +1,4 @@
-const CACHE = "squig-v4";
+const CACHE = "squig-v6";
 const ASSETS = [
   "./",
   "./index.html",
