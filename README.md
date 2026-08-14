@@ -1,7 +1,11 @@
-# Lanturn — a calm task manager for ADHD brains
+# Squig — a calm task manager for ADHD brains
 
 A small installable web app. No accounts, no cloud — everything lives in your
 phone's local storage.
+
+> Formerly "Lanturn" — renamed to Squig. If you had it installed under the
+> old name, your tasks and sessions carry over automatically the first time
+> you open the new version (see `migrateFromLanturn` in `index.html`).
 
 **What's in here:**
 - One task in view at a time, gentle language, no red "overdue" shame — just a
@@ -10,6 +14,13 @@ phone's local storage.
   gives a soft nudge, not a block.
 - A **Focus** tab: a focus-ring Pomodoro timer (25 / 50 / 10 min, or a 5 min
   break), tied to whichever task you're working on.
+- **Due dates & reminders**: give any task a due date/time (when adding it,
+  or later from its detail sheet) and Squig will nudge you when it hits —
+  an amber badge in the last hour, a notification when it's due.
+- **Repeating tasks**: set a task to repeat Daily / Weekly / Monthly (needs
+  a due date to anchor to). When you move a repeating task to Done, Squig
+  automatically queues the next occurrence at the next interval — so
+  "take meds", "water plants", or "submit timesheet" never need re-adding.
 
 ---
 
@@ -19,7 +30,7 @@ You need a tiny local server — opening `index.html` directly won't let the
 service worker or manifest register properly.
 
 ```bash
-cd lanturn
+cd squig
 python3 -m http.server 8080
 ```
 
@@ -32,16 +43,16 @@ A PWA needs to be served over **HTTPS** for Android to let you install it
 
 1. Create a new GitHub repo and push this folder to it:
    ```bash
-   cd lanturn
+   cd squig
    git init
    git add .
-   git commit -m "Lanturn v1"
+   git commit -m "Squig v1"
    git branch -M main
-   git remote add origin https://github.com/<you>/lanturn.git
+   git remote add origin https://github.com/<you>/squig.git
    git push -u origin main
    ```
 2. On GitHub: **Settings → Pages → Deploy from branch → main → / (root)**.
-   GitHub gives you a URL like `https://<you>.github.io/lanturn/`.
+   GitHub gives you a URL like `https://<you>.github.io/squig/`.
 3. Open that URL on your Android phone in Chrome → menu (⋮) → **Add to Home
    screen** / **Install app**. It now behaves like a normal app: its own
    icon, no browser bar, works offline.
@@ -55,7 +66,7 @@ you wrap this same web code in a thin native shell:
 around it)
 ```bash
 npm install @capacitor/core @capacitor/cli @capacitor/android
-npx cap init lanturn com.yourname.lanturn
+npx cap init squig com.yourname.squig
 npx cap add android
 # copy index.html, manifest.json, sw.js, icons/ into ./www
 npx cap sync
@@ -79,6 +90,11 @@ widget — Android APIs that a website can't reach.
   calm rather than alerting, since a wall of red badges reads as pressure.
 - **Doing column isn't hard-capped** — the nudge is a suggestion, not a
   lock, because forcing behavior tends to backfire; noticing is often enough.
-- **No push notifications for reminders yet** — those need real permission
-  handling and a backend/service worker push setup, which is a good v2
-  addition once this is running on a server you control.
+- **Reminders are local, not push-based.** Squig asks for notification
+  permission the first time you set a due date, then checks every 20s while
+  the app/tab is open (including backgrounded) and fires a real system
+  notification via the Notification API. What this **won't** do: wake up
+  and notify you if you've fully force-closed the app or restarted your
+  phone — that needs server-sent Push (a backend that can wake the service
+  worker even when nothing is open), which is a good v2 addition once
+  this is running on a server you control rather than as a local PWA.

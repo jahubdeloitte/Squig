@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1B1F3B">
-<title>Lanturn — Focus Tasks</title>
+<title>Squig — Focus Tasks</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -111,6 +111,9 @@
     background:var(--ink-softer); color:var(--mist);
   }
   .badge.over{ background:#3a3320; color:var(--signal); }
+  .badge.due{ background:var(--ink-softer); color:var(--mist); }
+  .badge.due.due-soon{ background:#3a3320; color:var(--signal); }
+  .badge.due.due-overdue{ background:#40241f; color:#ff9d85; }
 
   .empty{
     color:var(--mist); font-size:13.5px;
@@ -211,12 +214,13 @@
   .sheet h3{ margin:0 0 16px; font-size:17px; }
   .field{ margin-bottom:14px; }
   .field label{ display:block; font-size:12.5px; color:var(--mist); margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; }
-  .field input, .field textarea{
+  .field input, .field textarea, .field select{
     width:100%; background:var(--ink); border:1px solid var(--ink-softer);
     color:var(--paper); border-radius:12px; padding:12px 14px;
     font-family:'Inter'; font-size:15px; resize:none;
   }
-  .field input:focus, .field textarea:focus{ outline:2px solid var(--ember); outline-offset:1px; }
+  .field input:focus, .field textarea:focus, .field select:focus{ outline:2px solid var(--ember); outline-offset:1px; }
+  .field select{ appearance:none; -webkit-appearance:none; }
   .sheet-actions{ display:flex; gap:10px; margin-top:6px; }
   .sheet-actions .btn{ flex:1; }
   .sheet-secondary-row{ display:flex; gap:10px; margin-top:10px; }
@@ -253,7 +257,7 @@
   <header class="top">
     <div class="brand">
       <div class="mark"></div>
-      <div class="brand-name">Lanturn</div>
+      <div class="brand-name">Squig</div>
     </div>
     <div class="date" id="todayLabel"></div>
   </header>
@@ -347,6 +351,19 @@
         <label for="taskEstimate">Time estimate (minutes)</label>
         <input id="taskEstimate" type="number" inputmode="numeric" placeholder="15" min="1" max="480">
       </div>
+      <div class="field">
+        <label for="taskDue">Due &amp; remind me (optional)</label>
+        <input id="taskDue" type="datetime-local">
+      </div>
+      <div class="field">
+        <label for="taskRepeat">Repeat</label>
+        <select id="taskRepeat">
+          <option value="">Doesn't repeat</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
       <div class="sheet-actions">
         <button class="btn btn-ghost" id="cancelAdd">Cancel</button>
         <button class="btn btn-primary" id="saveAdd">Add task</button>
@@ -359,6 +376,23 @@
     <div class="sheet">
       <h3 id="detailTitle">Task</h3>
       <div id="detailMeta" class="focus-hint" style="text-align:left; margin-bottom:14px; max-width:none;"></div>
+      <div class="field">
+        <label for="detailDue">Due &amp; remind me</label>
+        <input id="detailDue" type="datetime-local">
+      </div>
+      <div class="field">
+        <label for="detailRepeat">Repeat</label>
+        <select id="detailRepeat">
+          <option value="">Doesn't repeat</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="sheet-secondary-row" style="margin-top:0; margin-bottom:14px;">
+        <button class="btn btn-ghost" id="saveDetailDue">Save</button>
+        <button class="btn btn-ghost" id="clearDetailDue">Clear due date</button>
+      </div>
       <div class="nudge" id="doingNudge"></div>
       <div class="sheet-actions" id="moveActions"></div>
       <div class="sheet-secondary-row">
@@ -377,14 +411,24 @@
   "use strict";
 
   /* ---------- storage ---------- */
-  const STORE_KEY = "lanturn.tasks.v1";
-  const SESS_KEY = "lanturn.sessions.v1";
+  const STORE_KEY = "squig.tasks.v1";
+  const SESS_KEY = "squig.sessions.v1";
 
   function load(key, fallback){
     try{ const v = JSON.parse(localStorage.getItem(key)); return v || fallback; }
     catch(e){ return fallback; }
   }
   function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+  // One-time migration: carry over data from the old "Lanturn" name so
+  // nobody loses tasks when the app updates on their phone.
+  (function migrateFromLanturn(){
+    if(localStorage.getItem(STORE_KEY) !== null) return; // already migrated
+    const oldTasks = localStorage.getItem('lanturn.tasks.v1');
+    const oldSessions = localStorage.getItem('lanturn.sessions.v1');
+    if(oldTasks !== null) localStorage.setItem(STORE_KEY, oldTasks);
+    if(oldSessions !== null) localStorage.setItem(SESS_KEY, oldSessions);
+  })();
 
   let tasks = load(STORE_KEY, []);
   let sessions = load(SESS_KEY, []); // {date:'YYYY-MM-DD', focusCompleted:bool}
@@ -421,6 +465,49 @@
 
   function minutesSince(iso){
     return Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  }
+
+  /* ---------- due dates ---------- */
+  const DUE_SOON_MS = 60 * 60 * 1000; // badge turns amber inside 1 hour
+
+  function fmtDue(iso){
+    const d = new Date(iso);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    const tomorrow = new Date(now); tomorrow.setDate(now.getDate()+1);
+    const isTomorrow = d.toDateString() === tomorrow.toDateString();
+    const time = d.toLocaleTimeString(undefined,{ hour:'numeric', minute:'2-digit' });
+    if(sameDay) return 'Today ' + time;
+    if(isTomorrow) return 'Tomorrow ' + time;
+    return d.toLocaleDateString(undefined,{ month:'short', day:'numeric' }) + ' ' + time;
+  }
+
+  function dueState(iso){
+    const diff = new Date(iso).getTime() - Date.now();
+    if(diff <= 0) return 'due-overdue';
+    if(diff <= DUE_SOON_MS) return 'due-soon';
+    return '';
+  }
+
+  /* ---------- repeating tasks ---------- */
+  function repeatLabel(r){
+    return r === 'daily' ? 'Daily' : r === 'weekly' ? 'Weekly' : r === 'monthly' ? 'Monthly' : '';
+  }
+
+  function advanceDate(base, repeat){
+    const d = new Date(base);
+    if(repeat === 'daily') d.setDate(d.getDate() + 1);
+    else if(repeat === 'weekly') d.setDate(d.getDate() + 7);
+    else if(repeat === 'monthly') d.setMonth(d.getMonth() + 1);
+    return d;
+  }
+
+  // datetime-local wants "YYYY-MM-DDTHH:mm" in local time, not UTC ISO
+  function toDatetimeLocalValue(iso){
+    const d = new Date(iso);
+    const pad = n => n.toString().padStart(2,'0');
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate())
+      + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
   function render(){
@@ -477,6 +564,19 @@
           }
         }
       }
+      if(t.dueAt && t.column !== 'done'){
+        const state = dueState(t.dueAt);
+        const due = document.createElement('span');
+        due.className = 'badge due mono' + (state ? ' ' + state : '');
+        due.textContent = (state === 'due-overdue' ? 'was due ' : 'due ') + fmtDue(t.dueAt);
+        meta.appendChild(due);
+      }
+      if(t.repeat){
+        const rep = document.createElement('span');
+        rep.className = 'badge mono';
+        rep.textContent = '↻ ' + repeatLabel(t.repeat);
+        meta.appendChild(rep);
+      }
       card.appendChild(meta);
       el.appendChild(card);
     });
@@ -487,6 +587,8 @@
   document.getElementById('fabAdd').addEventListener('click', ()=>{
     document.getElementById('taskTitle').value = '';
     document.getElementById('taskEstimate').value = '';
+    document.getElementById('taskDue').value = '';
+    document.getElementById('taskRepeat').value = '';
     addScrim.classList.add('show');
     setTimeout(()=> document.getElementById('taskTitle').focus(), 150);
   });
@@ -497,17 +599,24 @@
     const title = document.getElementById('taskTitle').value.trim();
     if(!title){ toast('Give it a name first'); return; }
     const est = parseInt(document.getElementById('taskEstimate').value, 10);
+    const dueVal = document.getElementById('taskDue').value;
+    const dueAt = dueVal ? new Date(dueVal).toISOString() : null;
+    const repeat = document.getElementById('taskRepeat').value || null;
     tasks.push({
       id: uid(),
       title,
       estimateMin: (est && est > 0) ? est : null,
       column: 'todo',
       createdAt: new Date().toISOString(),
-      startedAt: null
+      startedAt: null,
+      dueAt,
+      notified: false,
+      repeat
     });
     addScrim.classList.remove('show');
     render();
     toast('Added to To start');
+    if(dueAt) ensureNotificationPermission();
   });
 
   /* ---------- task detail / move ---------- */
@@ -522,6 +631,8 @@
     document.getElementById('detailMeta').textContent = t.estimateMin
       ? ('Estimated ' + t.estimateMin + ' min · currently in ' + labelFor(t.column))
       : ('No time estimate · currently in ' + labelFor(t.column));
+    document.getElementById('detailDue').value = t.dueAt ? toDatetimeLocalValue(t.dueAt) : '';
+    document.getElementById('detailRepeat').value = t.repeat || '';
 
     const nudge = document.getElementById('doingNudge');
     const alreadyDoing = tasks.find(x=> x.column==='doing' && x.id !== id);
@@ -555,10 +666,56 @@
     if(!t) return;
     t.column = col;
     t.startedAt = (col === 'doing') ? new Date().toISOString() : null;
+
+    let msg = 'Moved to ' + labelFor(col);
+    if(col === 'done' && t.repeat){
+      const base = t.dueAt ? new Date(t.dueAt) : new Date();
+      const nextDue = advanceDate(base, t.repeat);
+      tasks.push({
+        id: uid(),
+        title: t.title,
+        estimateMin: t.estimateMin,
+        column: 'todo',
+        createdAt: new Date().toISOString(),
+        startedAt: null,
+        dueAt: nextDue.toISOString(),
+        notified: false,
+        repeat: t.repeat
+      });
+      msg += ' · next one queued for ' + fmtDue(nextDue.toISOString());
+    }
+
     detailScrim.classList.remove('show');
     render();
-    toast('Moved to ' + labelFor(col));
+    toast(msg);
   }
+
+  document.getElementById('saveDetailDue').addEventListener('click', ()=>{
+    const t = tasks.find(x=>x.id===activeTaskId);
+    if(!t) return;
+    const val = document.getElementById('detailDue').value;
+    const repeat = document.getElementById('detailRepeat').value || null;
+    if(!val && repeat){ toast('Add a due date so repeats have a time to anchor to'); return; }
+    if(!val){ toast('Pick a date and time first'); return; }
+    t.dueAt = new Date(val).toISOString();
+    t.notified = false;
+    t.repeat = repeat;
+    render();
+    ensureNotificationPermission();
+    toast(repeat ? 'Saved · repeats ' + repeatLabel(repeat).toLowerCase() : 'Reminder set');
+  });
+
+  document.getElementById('clearDetailDue').addEventListener('click', ()=>{
+    const t = tasks.find(x=>x.id===activeTaskId);
+    if(!t) return;
+    t.dueAt = null;
+    t.notified = false;
+    t.repeat = null;
+    document.getElementById('detailDue').value = '';
+    document.getElementById('detailRepeat').value = '';
+    render();
+    toast('Reminder cleared');
+  });
 
   document.getElementById('deleteTask').addEventListener('click', ()=>{
     tasks = tasks.filter(t=> t.id !== activeTaskId);
@@ -699,6 +856,49 @@
       updateFocusTaskLabel();
     }
   }
+
+  /* ---------- reminders ---------- */
+  // Best-effort local reminders. These fire while Squig is open (foreground
+  // or backgrounded tab) via the Notification API. True background delivery
+  // when the app is fully closed needs server-sent Push, which isn't
+  // available for a plain static/local-storage app like this one — see
+  // the README for what a v2 with a small backend would add.
+  function ensureNotificationPermission(){
+    if(!('Notification' in window)) return;
+    if(Notification.permission === 'default'){
+      Notification.requestPermission();
+    }
+  }
+
+  function fireReminder(t){
+    const body = t.estimateMin ? ('~' + t.estimateMin + ' min · was due ' + fmtDue(t.dueAt)) : ('was due ' + fmtDue(t.dueAt));
+    if('Notification' in window && Notification.permission === 'granted'){
+      if(navigator.serviceWorker && navigator.serviceWorker.controller){
+        navigator.serviceWorker.ready.then(reg=>{
+          reg.showNotification('Squig: ' + t.title, { body, icon:'icons/icon-192.png', tag:t.id });
+        }).catch(()=>{ new Notification('Squig: ' + t.title, { body }); });
+      } else {
+        new Notification('Squig: ' + t.title, { body });
+      }
+    } else {
+      toast('Reminder: ' + t.title);
+    }
+    if('vibrate' in navigator){ navigator.vibrate([80,60,80]); }
+  }
+
+  function checkReminders(){
+    let changed = false;
+    tasks.forEach(t=>{
+      if(t.dueAt && !t.notified && t.column !== 'done' && new Date(t.dueAt).getTime() <= Date.now()){
+        fireReminder(t);
+        t.notified = true;
+        changed = true;
+      }
+    });
+    if(changed){ save(STORE_KEY, tasks); render(); }
+  }
+  setInterval(checkReminders, 20000);
+  checkReminders();
 
   /* ---------- service worker ---------- */
   if('serviceWorker' in navigator){

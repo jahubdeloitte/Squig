@@ -1,10 +1,12 @@
-const CACHE = "lanturn-v1";
+const CACHE = "squig-v3";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./icons/icon-192-maskable.png",
+  "./icons/icon-512-maskable.png"
 ];
 
 self.addEventListener("install", (e) => {
@@ -26,5 +28,15 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   e.respondWith(
     caches.match(e.request).then((cached) => cached || fetch(e.request))
+  );
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((clients) => {
+      if (clients.length > 0) return clients[0].focus();
+      return self.clients.openWindow("./");
+    })
   );
 });
