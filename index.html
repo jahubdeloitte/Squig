@@ -77,40 +77,41 @@
   .view.active{ display:block; }
   @keyframes fadein{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
 
-  /* ---- Board ---- */
-  .column{ margin-bottom:22px; }
-  .column-head{
+  /* ---- Tasks list ---- */
+  .list-head{
     display:flex; align-items:center; gap:8px;
-    margin-bottom:10px;
+    margin-bottom:12px;
     padding-left:2px;
   }
-  .column-head .dot{ width:8px; height:8px; border-radius:50%; }
-  .column-head h2{ font-size:14px; margin:0; text-transform:uppercase; letter-spacing:.08em; color:var(--mist); font-weight:600; }
-  .column-head .count{ font-size:12px; color:var(--mist); margin-left:auto; }
-
-  .col-todo .dot{ background:var(--mist); }
-  .col-doing .dot{ background:var(--ember); }
-  .col-done .dot{ background:var(--moss); }
+  .list-head h2{ font-size:14px; margin:0; text-transform:uppercase; letter-spacing:.08em; color:var(--mist); font-weight:600; }
+  .list-head .count{ font-size:12px; color:var(--mist); margin-left:auto; }
+  .list-hint{ font-size:12.5px; color:var(--mist); margin:-4px 0 14px 2px; line-height:1.5; }
 
   .cards{ display:flex; flex-direction:column; gap:10px; }
+
+  .card-wrap{ position:relative; border-radius:var(--radius); overflow:hidden; }
+  .card-swipe-bg{
+    position:absolute; inset:0; background:var(--moss); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    font-weight:700; font-size:14px; opacity:0; pointer-events:none;
+  }
+  .card-swipe-bg svg{ width:20px; height:20px; }
+
   .card{
+    position:relative;
     background:var(--ink-soft);
     border-radius:var(--radius);
     padding:14px 16px;
     border:1px solid transparent;
-    cursor:pointer;
-    transition:transform .12s ease, border-color .12s ease;
+    touch-action:pan-y;
+    will-change:transform;
   }
-  .card:active{ transform:scale(0.98); }
-  .card.doing{ border-color:var(--ember-dim); }
   .card-title{ font-size:15.5px; font-weight:500; line-height:1.35; }
-  .card-title.done{ text-decoration:line-through; color:var(--mist); }
-  .card-meta{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .card-meta{ display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
   .badge{
     font-size:11.5px; padding:3px 8px; border-radius:100px;
     background:var(--ink-softer); color:var(--mist);
   }
-  .badge.over{ background:#3a3320; color:var(--signal); }
   .badge.due{ background:var(--ink-softer); color:var(--mist); }
   .badge.due.due-soon{ background:#3a3320; color:var(--signal); }
   .badge.due.due-overdue{ background:#40241f; color:#ff9d85; }
@@ -209,6 +210,8 @@
     border-radius:24px 24px 0 0;
     padding:22px 20px calc(24px + env(safe-area-inset-bottom));
     animation:slideup .22s ease;
+    max-height:88vh;
+    overflow-y:auto;
   }
   @keyframes slideup{ from{ transform:translateY(30px); opacity:0;} to{ transform:none; opacity:1;} }
   .sheet h3{ margin:0 0 16px; font-size:17px; }
@@ -227,14 +230,6 @@
   .sheet-secondary-row .btn{ flex:1; padding:11px; font-size:13.5px; }
   .btn-danger{ background:transparent; color:#e08a7a; border:1px solid var(--ink-softer); }
 
-  .nudge{
-    background:var(--ink-softer); border-radius:14px; padding:12px 14px;
-    font-size:13px; color:var(--mist); margin-top:4px; margin-bottom:10px;
-    line-height:1.5; display:none;
-  }
-  .nudge.show{ display:block; }
-  .nudge b{ color:var(--paper); }
-
   .toast{
     position:fixed; left:50%; bottom:100px; transform:translateX(-50%);
     background:var(--paper); color:var(--ink); font-size:13.5px; font-weight:500;
@@ -244,7 +239,7 @@
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
 
   ::selection{ background:var(--ember); color:var(--ink); }
-  button:focus-visible, input:focus-visible, textarea:focus-visible{ outline:2px solid var(--ember); outline-offset:2px; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{ outline:2px solid var(--ember); outline-offset:2px; }
 
   @media (prefers-reduced-motion: reduce){
     *{ animation:none !important; transition:none !important; }
@@ -264,24 +259,11 @@
 
   <main>
 
-    <!-- BOARD -->
-    <section class="view active" id="view-board">
-
-      <div class="column col-todo">
-        <div class="column-head"><span class="dot"></span><h2>To start</h2><span class="count" id="count-todo">0</span></div>
-        <div class="cards" id="cards-todo"></div>
-      </div>
-
-      <div class="column col-doing">
-        <div class="column-head"><span class="dot"></span><h2>Doing</h2><span class="count" id="count-doing">0</span></div>
-        <div class="cards" id="cards-doing"></div>
-      </div>
-
-      <div class="column col-done">
-        <div class="column-head"><span class="dot"></span><h2>Done</h2><span class="count" id="count-done">0</span></div>
-        <div class="cards" id="cards-done"></div>
-      </div>
-
+    <!-- TASKS -->
+    <section class="view active" id="view-tasks">
+      <div class="list-head"><h2>Tasks</h2><span class="count" id="taskCount">0</span></div>
+      <div class="list-hint">Swipe a task either direction to mark it done. Tap it to edit, set a reminder, or start a focus session.</div>
+      <div class="cards" id="cards-tasks"></div>
     </section>
 
     <!-- FOCUS -->
@@ -302,7 +284,7 @@
 
         <div class="focus-task" id="focusTaskName">No task selected</div>
         <div class="focus-hint" id="focusHint">
-          Pick something from your board, or just start the timer —
+          Pick something from your tasks, or just start the timer —
           <button class="link" id="pickTaskBtn">choose a task</button>
         </div>
 
@@ -328,9 +310,12 @@
 
   <nav class="tabs">
     <div class="wrap">
-      <button class="tab-btn active" data-view="board">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="6" height="16" rx="1.5"/><rect x="9.5" y="4" width="6" height="10" rx="1.5"/><rect x="16" y="4" width="5" height="7" rx="1.5"/></svg>
-        Board
+      <button class="tab-btn active" data-view="tasks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/>
+          <path d="M4 6l1 1 2-2"/><path d="M4 12l1 1 2-2"/><path d="M4 18l1 1 2-2"/>
+        </svg>
+        Tasks
       </button>
       <button class="tab-btn" data-view="focus">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v4.7l3 2" stroke-linecap="round"/></svg>
@@ -348,7 +333,7 @@
         <input id="taskTitle" type="text" placeholder="e.g. Reply to landlord email" maxlength="120">
       </div>
       <div class="field">
-        <label for="taskEstimate">Time estimate (minutes)</label>
+        <label for="taskEstimate">Time estimate (minutes, optional)</label>
         <input id="taskEstimate" type="number" inputmode="numeric" placeholder="15" min="1" max="480">
       </div>
       <div class="field">
@@ -389,15 +374,16 @@
           <option value="monthly">Monthly</option>
         </select>
       </div>
-      <div class="sheet-secondary-row" style="margin-top:0; margin-bottom:14px;">
+      <div class="sheet-secondary-row" style="margin-top:0; margin-bottom:16px;">
         <button class="btn btn-ghost" id="saveDetailDue">Save</button>
         <button class="btn btn-ghost" id="clearDetailDue">Clear due date</button>
       </div>
-      <div class="nudge" id="doingNudge"></div>
-      <div class="sheet-actions" id="moveActions"></div>
-      <div class="sheet-secondary-row">
+      <div class="sheet-actions">
+        <button class="btn btn-primary" id="completeTaskBtn">Mark complete</button>
         <button class="btn btn-ghost" id="startFocusFromDetail">Start focus session</button>
-        <button class="btn btn-danger" id="deleteTask">Delete</button>
+      </div>
+      <div class="sheet-secondary-row">
+        <button class="btn btn-danger" id="deleteTask" style="flex:none; width:100%;">Delete</button>
       </div>
     </div>
   </div>
@@ -411,7 +397,7 @@
   "use strict";
 
   /* ---------- storage ---------- */
-  const STORE_KEY = "squig.tasks.v1";
+  const STORE_KEY = "squig.tasks.v2";
   const SESS_KEY = "squig.sessions.v1";
 
   function load(key, fallback){
@@ -420,18 +406,36 @@
   }
   function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
-  // One-time migration: carry over data from the old "Lanturn" name so
-  // nobody loses tasks when the app updates on their phone.
-  (function migrateFromLanturn(){
+  // One-time migration: carry over data from the old "Lanturn" name, and
+  // from the earlier Board/Doing/Done task shape, so nobody loses tasks.
+  (function migrateOldData(){
     if(localStorage.getItem(STORE_KEY) !== null) return; // already migrated
-    const oldTasks = localStorage.getItem('lanturn.tasks.v1');
+
     const oldSessions = localStorage.getItem('lanturn.sessions.v1');
-    if(oldTasks !== null) localStorage.setItem(STORE_KEY, oldTasks);
-    if(oldSessions !== null) localStorage.setItem(SESS_KEY, oldSessions);
+    if(oldSessions !== null && localStorage.getItem(SESS_KEY) === null){
+      localStorage.setItem(SESS_KEY, oldSessions);
+    }
+
+    // Try both the v1 Squig task shape and the original Lanturn shape.
+    const oldTasksRaw = localStorage.getItem('squig.tasks.v1') || localStorage.getItem('lanturn.tasks.v1');
+    if(!oldTasksRaw) return;
+    try{
+      const oldTasks = JSON.parse(oldTasksRaw) || [];
+      // Drop anything already marked done (no more Done list), strip the
+      // retired column/startedAt fields.
+      const migrated = oldTasks
+        .filter(t => t.column !== 'done')
+        .map(t => ({
+          id: t.id, title: t.title, estimateMin: t.estimateMin || null,
+          createdAt: t.createdAt || new Date().toISOString(),
+          dueAt: t.dueAt || null, notified: !!t.notified, repeat: t.repeat || null
+        }));
+      save(STORE_KEY, migrated);
+    }catch(e){ /* leave fresh */ }
   })();
 
   let tasks = load(STORE_KEY, []);
-  let sessions = load(SESS_KEY, []); // {date:'YYYY-MM-DD', focusCompleted:bool}
+  let sessions = load(SESS_KEY, []); // {date:'YYYY-MM-DD'}
 
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
   function todayStr(){ return new Date().toISOString().slice(0,10); }
@@ -450,7 +454,7 @@
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined,{ weekday:'short', month:'short', day:'numeric' });
 
   /* ---------- tabs ---------- */
-  const views = { board: document.getElementById('view-board'), focus: document.getElementById('view-focus') };
+  const views = { tasks: document.getElementById('view-tasks'), focus: document.getElementById('view-focus') };
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -460,11 +464,19 @@
     });
   });
 
-  /* ---------- render board ---------- */
   function fmtMin(m){ return m + 'm'; }
 
-  function minutesSince(iso){
-    return Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  /* ---------- repeating tasks ---------- */
+  function repeatLabel(r){
+    return r === 'daily' ? 'Daily' : r === 'weekly' ? 'Weekly' : r === 'monthly' ? 'Monthly' : '';
+  }
+
+  function advanceDate(base, repeat){
+    const d = new Date(base);
+    if(repeat === 'daily') d.setDate(d.getDate() + 1);
+    else if(repeat === 'weekly') d.setDate(d.getDate() + 7);
+    else if(repeat === 'monthly') d.setMonth(d.getMonth() + 1);
+    return d;
   }
 
   /* ---------- due dates ---------- */
@@ -489,19 +501,6 @@
     return '';
   }
 
-  /* ---------- repeating tasks ---------- */
-  function repeatLabel(r){
-    return r === 'daily' ? 'Daily' : r === 'weekly' ? 'Weekly' : r === 'monthly' ? 'Monthly' : '';
-  }
-
-  function advanceDate(base, repeat){
-    const d = new Date(base);
-    if(repeat === 'daily') d.setDate(d.getDate() + 1);
-    else if(repeat === 'weekly') d.setDate(d.getDate() + 7);
-    else if(repeat === 'monthly') d.setMonth(d.getMonth() + 1);
-    return d;
-  }
-
   // datetime-local wants "YYYY-MM-DDTHH:mm" in local time, not UTC ISO
   function toDatetimeLocalValue(iso){
     const d = new Date(iso);
@@ -510,39 +509,50 @@
       + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
+  /* ---------- sorting & render ---------- */
+  function sortedTasks(){
+    return tasks.slice().sort((a,b)=>{
+      if(a.dueAt && b.dueAt) return new Date(a.dueAt) - new Date(b.dueAt);
+      if(a.dueAt) return -1;
+      if(b.dueAt) return 1;
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+  }
+
   function render(){
-    const cols = { todo:[], doing:[], done:[] };
-    tasks.forEach(t=> cols[t.column].push(t));
-
-    document.getElementById('count-todo').textContent = cols.todo.length;
-    document.getElementById('count-doing').textContent = cols.doing.length;
-    document.getElementById('count-done').textContent = cols.done.length;
-
-    renderColumn('cards-todo', cols.todo, 'Nothing waiting — add something whenever you\'re ready.');
-    renderColumn('cards-doing', cols.doing, 'Nothing in progress. Move a task here when you start it.');
-    renderColumn('cards-done', cols.done, 'Finished tasks land here.');
-
+    const list = sortedTasks();
+    document.getElementById('taskCount').textContent = list.length;
+    renderList(list);
     renderTaskPicker();
     save(STORE_KEY, tasks);
   }
 
-  function renderColumn(elId, list, emptyText){
-    const el = document.getElementById(elId);
+  const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+
+  function renderList(list){
+    const el = document.getElementById('cards-tasks');
     el.innerHTML = '';
     if(list.length === 0){
       const p = document.createElement('div');
       p.className = 'empty';
-      p.textContent = emptyText;
+      p.textContent = 'Nothing here yet — tap + whenever you\'re ready.';
       el.appendChild(p);
       return;
     }
-    list.slice().reverse().forEach(t=>{
+    list.forEach(t=>{
+      const wrap = document.createElement('div');
+      wrap.className = 'card-wrap';
+
+      const bg = document.createElement('div');
+      bg.className = 'card-swipe-bg';
+      bg.innerHTML = CHECK_SVG + '<span>Done</span>';
+      wrap.appendChild(bg);
+
       const card = document.createElement('div');
-      card.className = 'card' + (t.column==='doing' ? ' doing' : '');
-      card.addEventListener('click', ()=> openDetail(t.id));
+      card.className = 'card';
 
       const title = document.createElement('div');
-      title.className = 'card-title' + (t.column==='done' ? ' done' : '');
+      title.className = 'card-title';
       title.textContent = t.title;
       card.appendChild(title);
 
@@ -553,18 +563,8 @@
         badge.className = 'badge mono';
         badge.textContent = '~' + fmtMin(t.estimateMin);
         meta.appendChild(badge);
-
-        if(t.column === 'doing' && t.startedAt){
-          const elapsed = minutesSince(t.startedAt);
-          if(elapsed > t.estimateMin){
-            const over = document.createElement('span');
-            over.className = 'badge over mono';
-            over.textContent = '+' + (elapsed - t.estimateMin) + 'm over';
-            meta.appendChild(over);
-          }
-        }
       }
-      if(t.dueAt && t.column !== 'done'){
+      if(t.dueAt){
         const state = dueState(t.dueAt);
         const due = document.createElement('span');
         due.className = 'badge due mono' + (state ? ' ' + state : '');
@@ -578,8 +578,88 @@
         meta.appendChild(rep);
       }
       card.appendChild(meta);
-      el.appendChild(card);
+      wrap.appendChild(card);
+      el.appendChild(wrap);
+
+      attachSwipe(wrap, card, bg, t.id);
     });
+  }
+
+  /* ---------- swipe to complete ---------- */
+  function attachSwipe(wrap, card, bg, id){
+    const threshold = 88;
+    let startX = 0, startY = 0, dx = 0, dragging = false, decided = false, isHorizontal = false;
+
+    function onDown(e){
+      dragging = true; decided = false; isHorizontal = false; dx = 0;
+      startX = e.clientX; startY = e.clientY;
+      card.style.transition = 'none';
+      try{ card.setPointerCapture(e.pointerId); }catch(err){}
+    }
+    function onMove(e){
+      if(!dragging) return;
+      const x = e.clientX, y = e.clientY;
+      dx = x - startX;
+      const dy = y - startY;
+      if(!decided){
+        if(Math.abs(dx) > 6 || Math.abs(dy) > 6){
+          decided = true;
+          isHorizontal = Math.abs(dx) > Math.abs(dy);
+        }
+      }
+      if(isHorizontal){
+        if(e.cancelable) e.preventDefault();
+        card.style.transform = 'translateX(' + dx + 'px)';
+        bg.style.opacity = Math.min(Math.abs(dx) / threshold, 1);
+      }
+    }
+    function onUp(e){
+      if(!dragging) return;
+      dragging = false;
+      if(isHorizontal && Math.abs(dx) > threshold){
+        card.style.transition = 'transform .18s ease, opacity .18s ease';
+        card.style.transform = 'translateX(' + (dx > 0 ? '110%' : '-110%') + ')';
+        card.style.opacity = '0';
+        setTimeout(()=> completeTask(id), 170);
+      } else if(!isHorizontal && Math.abs(dx) < 6 && Math.abs(e.clientY - startY) < 6){
+        card.style.transition = 'transform .2s ease';
+        card.style.transform = 'translateX(0)';
+        bg.style.opacity = 0;
+        openDetail(id);
+      } else {
+        card.style.transition = 'transform .2s ease';
+        card.style.transform = 'translateX(0)';
+        bg.style.opacity = 0;
+      }
+      dx = 0;
+    }
+
+    card.addEventListener('pointerdown', onDown);
+    card.addEventListener('pointermove', onMove);
+    card.addEventListener('pointerup', onUp);
+    card.addEventListener('pointercancel', onUp);
+  }
+
+  /* ---------- complete / delete ---------- */
+  function completeTask(id){
+    const t = tasks.find(x=>x.id===id);
+    if(!t) return;
+    let msg = 'Nice — marked done';
+    if(t.repeat){
+      const base = t.dueAt ? new Date(t.dueAt) : new Date();
+      const nextDue = advanceDate(base, t.repeat);
+      tasks.push({
+        id: uid(), title: t.title, estimateMin: t.estimateMin,
+        createdAt: new Date().toISOString(), dueAt: nextDue.toISOString(),
+        notified: false, repeat: t.repeat
+      });
+      msg = 'Done · next one queued for ' + fmtDue(nextDue.toISOString());
+    }
+    tasks = tasks.filter(x=> x.id !== id);
+    if(selectedTaskId === id){ selectedTaskId = null; updateFocusTaskLabel(); }
+    detailScrim.classList.remove('show');
+    render();
+    toast(msg);
   }
 
   /* ---------- add task ---------- */
@@ -606,20 +686,18 @@
       id: uid(),
       title,
       estimateMin: (est && est > 0) ? est : null,
-      column: 'todo',
       createdAt: new Date().toISOString(),
-      startedAt: null,
       dueAt,
       notified: false,
       repeat
     });
     addScrim.classList.remove('show');
     render();
-    toast('Added to To start');
+    toast('Added');
     if(dueAt) ensureNotificationPermission();
   });
 
-  /* ---------- task detail / move ---------- */
+  /* ---------- task detail ---------- */
   const detailScrim = document.getElementById('detailScrim');
   let activeTaskId = null;
 
@@ -629,65 +707,11 @@
     if(!t) return;
     document.getElementById('detailTitle').textContent = t.title;
     document.getElementById('detailMeta').textContent = t.estimateMin
-      ? ('Estimated ' + t.estimateMin + ' min · currently in ' + labelFor(t.column))
-      : ('No time estimate · currently in ' + labelFor(t.column));
+      ? ('Estimated ' + t.estimateMin + ' min')
+      : 'No time estimate';
     document.getElementById('detailDue').value = t.dueAt ? toDatetimeLocalValue(t.dueAt) : '';
     document.getElementById('detailRepeat').value = t.repeat || '';
-
-    const nudge = document.getElementById('doingNudge');
-    const alreadyDoing = tasks.find(x=> x.column==='doing' && x.id !== id);
-    if(t.column !== 'doing' && alreadyDoing){
-      nudge.innerHTML = 'One thing at a time? <b>"'+escapeHtml(alreadyDoing.title)+'"</b> is already in Doing. That\'s okay — you can still move this one too.';
-      nudge.classList.add('show');
-    } else {
-      nudge.classList.remove('show');
-    }
-
-    const actions = document.getElementById('moveActions');
-    actions.innerHTML = '';
-    const order = ['todo','doing','done'];
-    order.forEach(col=>{
-      if(col === t.column) return;
-      const b = document.createElement('button');
-      b.className = 'btn ' + (col==='doing' ? 'btn-primary' : 'btn-ghost');
-      b.textContent = 'Move to ' + labelFor(col);
-      b.addEventListener('click', ()=> moveTask(t.id, col));
-      actions.appendChild(b);
-    });
-
     detailScrim.classList.add('show');
-  }
-
-  function labelFor(col){ return col==='todo' ? 'To start' : col==='doing' ? 'Doing' : 'Done'; }
-  function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-
-  function moveTask(id, col){
-    const t = tasks.find(x=>x.id===id);
-    if(!t) return;
-    t.column = col;
-    t.startedAt = (col === 'doing') ? new Date().toISOString() : null;
-
-    let msg = 'Moved to ' + labelFor(col);
-    if(col === 'done' && t.repeat){
-      const base = t.dueAt ? new Date(t.dueAt) : new Date();
-      const nextDue = advanceDate(base, t.repeat);
-      tasks.push({
-        id: uid(),
-        title: t.title,
-        estimateMin: t.estimateMin,
-        column: 'todo',
-        createdAt: new Date().toISOString(),
-        startedAt: null,
-        dueAt: nextDue.toISOString(),
-        notified: false,
-        repeat: t.repeat
-      });
-      msg += ' · next one queued for ' + fmtDue(nextDue.toISOString());
-    }
-
-    detailScrim.classList.remove('show');
-    render();
-    toast(msg);
   }
 
   document.getElementById('saveDetailDue').addEventListener('click', ()=>{
@@ -717,8 +741,13 @@
     toast('Reminder cleared');
   });
 
+  document.getElementById('completeTaskBtn').addEventListener('click', ()=>{
+    completeTask(activeTaskId);
+  });
+
   document.getElementById('deleteTask').addEventListener('click', ()=>{
     tasks = tasks.filter(t=> t.id !== activeTaskId);
+    if(selectedTaskId === activeTaskId){ selectedTaskId = null; updateFocusTaskLabel(); }
     detailScrim.classList.remove('show');
     render();
     toast('Task deleted');
@@ -753,15 +782,15 @@
         nameEl.textContent = t.title;
         hintEl.innerHTML = 'Working on this one. <button class="link" id="pickTaskBtn2">Change task</button>';
         document.getElementById('pickTaskBtn2').addEventListener('click', ()=>{
-          document.querySelector('.tab-btn[data-view="board"]').click();
+          document.querySelector('.tab-btn[data-view="tasks"]').click();
         });
         return;
       }
     }
     nameEl.textContent = 'No task selected';
-    hintEl.innerHTML = 'Pick something from your board, or just start the timer — <button class="link" id="pickTaskBtn">choose a task</button>';
+    hintEl.innerHTML = 'Pick something from your tasks, or just start the timer — <button class="link" id="pickTaskBtn">choose a task</button>';
     document.getElementById('pickTaskBtn').addEventListener('click', ()=>{
-      document.querySelector('.tab-btn[data-view="board"]').click();
+      document.querySelector('.tab-btn[data-view="tasks"]').click();
     });
   }
   updateFocusTaskLabel();
@@ -848,21 +877,11 @@
   }
   updateSessionCount();
 
-  /* ---------- task picker fallback (used if user taps 'choose a task' with none in Doing) ---------- */
-  function renderTaskPicker(){
-    // if the previously selected focus task got deleted, clear it
-    if(selectedTaskId && !tasks.find(t=>t.id===selectedTaskId)){
-      selectedTaskId = null;
-      updateFocusTaskLabel();
-    }
-  }
-
   /* ---------- reminders ---------- */
   // Best-effort local reminders. These fire while Squig is open (foreground
   // or backgrounded tab) via the Notification API. True background delivery
   // when the app is fully closed needs server-sent Push, which isn't
-  // available for a plain static/local-storage app like this one — see
-  // the README for what a v2 with a small backend would add.
+  // available for a plain static/local-storage app like this one.
   function ensureNotificationPermission(){
     if(!('Notification' in window)) return;
     if(Notification.permission === 'default'){
@@ -889,7 +908,7 @@
   function checkReminders(){
     let changed = false;
     tasks.forEach(t=>{
-      if(t.dueAt && !t.notified && t.column !== 'done' && new Date(t.dueAt).getTime() <= Date.now()){
+      if(t.dueAt && !t.notified && new Date(t.dueAt).getTime() <= Date.now()){
         fireReminder(t);
         t.notified = true;
         changed = true;
@@ -899,6 +918,14 @@
   }
   setInterval(checkReminders, 20000);
   checkReminders();
+
+  /* ---------- task picker fallback ---------- */
+  function renderTaskPicker(){
+    if(selectedTaskId && !tasks.find(t=>t.id===selectedTaskId)){
+      selectedTaskId = null;
+      updateFocusTaskLabel();
+    }
+  }
 
   /* ---------- service worker ---------- */
   if('serviceWorker' in navigator){

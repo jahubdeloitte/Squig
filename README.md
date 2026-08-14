@@ -8,19 +8,21 @@ phone's local storage.
 > you open the new version (see `migrateFromLanturn` in `index.html`).
 
 **What's in here:**
-- One task in view at a time, gentle language, no red "overdue" shame — just a
-  quiet "+8m over" note.
-- A **Board** tab: To start → Doing → Done. Moving a second task into Doing
-  gives a soft nudge, not a block.
-- A **Focus** tab: a focus-ring Pomodoro timer (25 / 50 / 10 min, or a 5 min
-  break), tied to whichever task you're working on.
+- A single **Tasks** list, sorted by what's due soonest. No columns to
+  drag things through — just add a task and swipe it away when it's done.
+- **Swipe to complete**: swipe a task card either direction to mark it
+  done. Tap a card instead to edit it, change its due date/reminder, or
+  jump into a focus session on it.
 - **Due dates & reminders**: give any task a due date/time (when adding it,
-  or later from its detail sheet) and Squig will nudge you when it hits —
-  an amber badge in the last hour, a notification when it's due.
+  or later by tapping it) and Squig will nudge you when it hits — an amber
+  badge in the last hour, a notification when it's due.
 - **Repeating tasks**: set a task to repeat Daily / Weekly / Monthly (needs
-  a due date to anchor to). When you move a repeating task to Done, Squig
+  a due date to anchor to). Swipe a repeating task done and Squig
   automatically queues the next occurrence at the next interval — so
   "take meds", "water plants", or "submit timesheet" never need re-adding.
+- A **Focus** tab: a focus-ring Pomodoro timer (25 / 50 / 10 min, or a 5 min
+  break) for one-off tasks you want to sit down and grind through — tap
+  "Start focus session" from any task's detail view to attach it.
 
 ---
 
@@ -88,8 +90,9 @@ widget — Android APIs that a website can't reach.
 
 - **Dark, low-glare palette** (deep indigo, warm coral accent) — meant to be
   calm rather than alerting, since a wall of red badges reads as pressure.
-- **Doing column isn't hard-capped** — the nudge is a suggestion, not a
-  lock, because forcing behavior tends to backfire; noticing is often enough.
+- **No Doing/Done columns** — earlier versions had a three-column board, but
+  for a reminders-first app a single sorted list with a quick swipe-to-clear
+  gesture is less to manage and matches how the app is actually used.
 - **Reminders are local, not push-based.** Squig asks for notification
   permission the first time you set a due date, then checks every 20s while
   the app/tab is open (including backgrounded) and fires a real system
