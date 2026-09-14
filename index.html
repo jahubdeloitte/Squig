@@ -384,7 +384,7 @@ function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
       .map(t => ({
         id: t.id, title: t.title, estimateMin: t.estimateMin || null,
         createdAt: t.createdAt || new Date().toISOString(),
-        dueAt: t.dueAt || null, notifyCount: t.notified ? 1 : 0, nextNotifyAt: null, repeat: t.repeat || null
+        dueAt: t.dueAt || null, notifyCount: t.notified ? 1 : 0, repeat: t.repeat || null
       }));
     save(STORE_KEY, migrated);
   }catch(e){ /* leave fresh */ }
@@ -475,8 +475,8 @@ function advanceStaleRepeats(){
     if(moved){
       t.dueAt = due.toISOString();
       t.notifyCount = 0;
-      t.nextNotifyAt = null;
       changed = true;
+      scheduleNativeReminders(t);
     }
   });
   return changed;
@@ -600,7 +600,7 @@ function renderCards(elId, list, accent, emptyText){
       due.textContent = (state === 'due-overdue' ? 'was due ' : 'due ') + fmtDue(t.dueAt);
       meta.appendChild(due);
 
-      if((t.notifyCount || 0) >= MAX_NAGS){
+      if(t.repeat && nagsDueByNow(t) >= MAX_NAGS){
         const paused = document.createElement('span');
         paused.className = 'badge paused';
         paused.textContent = pausedUntilText(t);
@@ -675,14 +675,17 @@ function completeTask(id){
   const t = tasks.find(x=>x.id===id);
   if(!t) return;
   let msg = 'Nice — marked done';
+  cancelNativeReminders(t.id);
   if(t.repeat){
     const base = t.dueAt ? new Date(t.dueAt) : new Date();
     const nextDue = advanceDate(base, t.repeat);
-    tasks.push({
+    const next = {
       id: uid(), title: t.title, estimateMin: t.estimateMin,
       createdAt: new Date().toISOString(), dueAt: nextDue.toISOString(),
-      notifyCount: 0, nextNotifyAt: null, repeat: t.repeat
-    });
+      notifyCount: 0, repeat: t.repeat
+    };
+    tasks.push(next);
+    scheduleNativeReminders(next);
     msg = 'Done · next one queued for ' + fmtDue(nextDue.toISOString());
   }
   tasks = tasks.filter(x=> x.id !== id);
@@ -726,21 +729,24 @@ document.getElementById('saveAdd').addEventListener('click', ()=>{
   const repeat = addContext === 'oneoff' ? null : addContext;
   if(repeat && !dueVal){ toast('Pick a time so this has something to repeat from'); return; }
   const dueAt = dueVal ? new Date(dueVal).toISOString() : null;
-  tasks.push({
+  const newTask = {
     id: uid(),
     title,
     estimateMin: (est && est > 0) ? est : null,
     createdAt: new Date().toISOString(),
     dueAt,
     notifyCount: 0,
-    nextNotifyAt: null,
     repeat
-  });
+  };
+  tasks.push(newTask);
   addScrim.classList.remove('show');
   if(currentMainTab === 'focus') setFocusSub('tasks');
   render();
   toast('Added');
-  if(dueAt && repeat) ensureNotificationPermission();
+  if(dueAt && repeat){
+    ensureNotificationPermission();
+    scheduleNativeReminders(newTask);
+  }
 });
 
 /* ---------- task detail ---------- */
@@ -770,9 +776,11 @@ document.getElementById('saveDetailDue').addEventListener('click', ()=>{
   if(!val){ toast('Pick a date and time first'); return; }
   t.dueAt = new Date(val).toISOString();
   t.notifyCount = 0;
-  t.nextNotifyAt = null;
   render();
-  if(t.repeat) ensureNotificationPermission();
+  if(t.repeat){
+    ensureNotificationPermission();
+    scheduleNativeReminders(t);
+  }
   toast('Saved');
 });
 document.getElementById('clearDetailDue').addEventListener('click', ()=>{
@@ -780,15 +788,16 @@ document.getElementById('clearDetailDue').addEventListener('click', ()=>{
   if(!t) return;
   t.dueAt = null;
   t.notifyCount = 0;
-  t.nextNotifyAt = null;
   document.getElementById('detailDue').value = '';
   render();
+  cancelNativeReminders(t.id);
   toast('Reminder cleared');
 });
 document.getElementById('completeTaskBtn').addEventListener('click', ()=>{
   completeTask(activeTaskId);
 });
 document.getElementById('deleteTask').addEventListener('click', ()=>{
+  cancelNativeReminders(activeTaskId);
   tasks = tasks.filter(t=> t.id !== activeTaskId);
   if(selectedTaskId === activeTaskId){ selectedTaskId = null; updateFocusTaskLabel(); }
   detailScrim.classList.remove('show');
@@ -909,13 +918,51 @@ updateSessionCount();
 
 /* ---------- reminders ---------- */
 // Three strikes, escalating tone, then silence until the next occurrence.
-// MAX_NAGS how many times a task will remind. NAG_GAPS_MS[i] is the wait
-// before the (i+2)th nag — i.e. NAG_GAPS_MS[0] is the gap after nag 1,
-// NAG_GAPS_MS[1] is the gap after nag 2. After the last nag, silence.
+// MAX_NAGS how many times a task will remind. NAG_OFFSETS_MS[i] is how long
+// after dueAt the (i+1)th nag lands — cumulative, not gap-between. So nag 1
+// fires at dueAt, nag 2 at dueAt+30min, nag 3 at dueAt+30min+2hr.
 const MAX_NAGS = 3;
-const NAG_GAPS_MS = [30 * 60 * 1000, 2 * 60 * 60 * 1000]; // 30 min, then 2 hours
+const NAG_OFFSETS_MS = [0, 30 * 60 * 1000, 30 * 60 * 1000 + 2 * 60 * 60 * 1000];
+
+// Detect whether we're running inside the native Android/iOS shell (Capacitor)
+// vs a plain browser/PWA. On native, @capacitor/local-notifications schedules
+// real OS-level notifications that fire even if the app is fully closed —
+// no npm import needed, Capacitor's runtime bridge exposes it directly on
+// window.Capacitor.Plugins once the plugin is installed + `npx cap sync` has run.
+const Native = (function(){
+  const cap = window.Capacitor;
+  const isNative = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+  const LocalNotifications = (isNative && cap.Plugins) ? cap.Plugins.LocalNotifications : null;
+  return { isNative, LocalNotifications };
+})();
+
+// Capacitor notification IDs must be plain numbers, not our string task IDs.
+// Folds the task id into a stable int, then tags on the attempt (1-3) as
+// the last digit so each task's 3 nags get distinct, deterministic IDs —
+// letting us cancel/reschedule them later without tracking IDs separately.
+function nativeNotifId(taskId, attempt){
+  let h = 0;
+  for(let i=0;i<taskId.length;i++){ h = (h * 31 + taskId.charCodeAt(i)) | 0; }
+  return (Math.abs(h) % 1000000) * 10 + attempt;
+}
+
+// How many of the 3 nags *should* have fired by now, purely from elapsed
+// time since dueAt. This is what the "paused" badge reads — deliberately
+// not tied to a background-JS counter, since on native the OS fires nags
+// independently of whether our JS was ever running to track them.
+function nagsDueByNow(t){
+  if(!t.dueAt) return 0;
+  const elapsed = Date.now() - new Date(t.dueAt).getTime();
+  let count = 0;
+  for(let i=0;i<NAG_OFFSETS_MS.length;i++){ if(elapsed >= NAG_OFFSETS_MS[i]) count++; }
+  return count;
+}
 
 function ensureNotificationPermission(){
+  if(Native.isNative && Native.LocalNotifications){
+    Native.LocalNotifications.requestPermissions().catch(()=>{});
+    return;
+  }
   if(!('Notification' in window)) return;
   if(Notification.permission === 'default'){ Notification.requestPermission(); }
 }
@@ -941,6 +988,41 @@ function reminderCopy(t, attempt){
   };
 }
 
+// Cancels any of this task's 3 nags that are still scheduled natively.
+// Safe to call even if nothing was ever scheduled (e.g. web-only, or a
+// one-off task that never nags in the first place).
+async function cancelNativeReminders(taskId){
+  if(!Native.isNative || !Native.LocalNotifications) return;
+  const ids = [1,2,3].map(a => ({ id: nativeNotifId(taskId, a) }));
+  try{ await Native.LocalNotifications.cancel({ notifications: ids }); }catch(e){}
+}
+
+// Cancels then re-schedules a task's 3 nags at absolute times based on its
+// current dueAt. Call this any time a repeating task's due date is set,
+// edited, or rolled forward. One-off tasks and tasks with no due date get
+// nothing scheduled (they never nag — see checkReminders below).
+async function scheduleNativeReminders(t){
+  if(!Native.isNative || !Native.LocalNotifications) return;
+  await cancelNativeReminders(t.id);
+  if(!t.repeat || !t.dueAt) return;
+  const due = new Date(t.dueAt).getTime();
+  const notifications = [1,2,3].map(attempt=>{
+    const copy = reminderCopy(t, attempt);
+    return {
+      id: nativeNotifId(t.id, attempt),
+      title: copy.title,
+      body: copy.body,
+      schedule: { at: new Date(due + NAG_OFFSETS_MS[attempt-1]) }
+    };
+  }).filter(n => n.schedule.at.getTime() > Date.now()); // skip any that would already be in the past
+  if(notifications.length){
+    try{ await Native.LocalNotifications.schedule({ notifications }); }catch(e){}
+  }
+}
+
+// Web-only fallback: fires a browser Notification (or a toast, if
+// permission was never granted) for whichever nag is due right now.
+// Never runs on native — there, the OS fires scheduled nags independently.
 function fireReminder(t, attempt){
   const { title, body } = reminderCopy(t, attempt);
   if('Notification' in window && Notification.permission === 'granted'){
@@ -962,21 +1044,21 @@ function fireReminder(t, attempt){
 
 function checkReminders(){
   let changed = advanceStaleRepeats();
-  const now = Date.now();
-  tasks.forEach(t=>{
-    if(!t.dueAt || !t.repeat) return; // one-off Focus tasks don't nag — they're meant to be done right away
-    const count = t.notifyCount || 0;
-    if(count >= MAX_NAGS) return; // three strikes — stay quiet until next occurrence
-    const readyAt = t.nextNotifyAt ? new Date(t.nextNotifyAt).getTime() : new Date(t.dueAt).getTime();
-    if(readyAt <= now){
-      const attempt = count + 1;
-      fireReminder(t, attempt);
-      t.notifyCount = attempt;
-      t.nextNotifyAt = attempt < MAX_NAGS ? new Date(now + NAG_GAPS_MS[attempt-1]).toISOString() : null;
-      changed = true;
-    }
-  });
-  if(changed){ save(STORE_KEY, tasks); render(); }
+  if(!Native.isNative){
+    tasks.forEach(t=>{
+      if(!t.dueAt || !t.repeat) return; // one-off Focus tasks don't nag — they're meant to be done right away
+      const due = nagsDueByNow(t);
+      const fired = t.notifyCount || 0;
+      if(due > fired && fired < MAX_NAGS){
+        const attempt = fired + 1;
+        fireReminder(t, attempt);
+        t.notifyCount = attempt;
+        changed = true;
+      }
+    });
+  }
+  if(changed){ save(STORE_KEY, tasks); }
+  render(); // cheap; keeps due/paused badges fresh even when nothing changed
 }
 setInterval(checkReminders, 20000);
 checkReminders();
@@ -997,6 +1079,11 @@ if('serviceWorker' in navigator){
 }
 
 render();
+
+if(Native.isNative && Native.LocalNotifications){
+  ensureNotificationPermission();
+  tasks.forEach(t=>{ if(t.repeat && t.dueAt) scheduleNativeReminders(t); });
+}
 })();
 </script>
 </body>

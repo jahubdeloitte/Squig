@@ -11,903 +11,1079 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --ink: #1B1F3B;
-    --ink-soft: #262B4D;
-    --ink-softer: #323863;
-    --paper: #F7F5F0;
-    --ember: #FF8552;
-    --ember-dim: #7a4736;
-    --moss: #7FA68C;
-    --signal: #FFD166;
-    --mist: #A8AEC1;
-    --radius: 18px;
-  }
-  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{ height:100%; }
-  body{
-    margin:0;
-    background:var(--ink);
-    color:var(--paper);
-    font-family:'Inter',sans-serif;
-    overscroll-behavior:none;
-    min-height:100vh;
-    min-height:100dvh;
-  }
-  h1,h2,h3,.display{ font-family:'Space Grotesk',sans-serif; }
-  .mono{ font-family:'IBM Plex Mono',monospace; }
-
-  #app{
-    max-width:480px;
-    margin:0 auto;
-    min-height:100vh;
-    min-height:100dvh;
-    display:flex;
-    flex-direction:column;
-    padding-bottom:calc(74px + env(safe-area-inset-bottom));
-  }
-
-  header.top{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:20px 20px 12px;
-  }
-  header.top .brand{
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  header.top .mark{
-    width:26px;height:26px;border-radius:50%;
-    background:conic-gradient(var(--ember) 0 65%, var(--ink-softer) 65% 100%);
-    position:relative;
-    flex-shrink:0;
-  }
-  header.top .mark::after{
-    content:"";
-    position:absolute; inset:6px;
-    background:var(--paper); border-radius:50%;
-  }
-  header.top .brand-name{ font-size:19px; font-weight:700; letter-spacing:-0.01em; }
-  header.top .date{ font-size:13px; color:var(--mist); }
-
-  main{ flex:1; padding:4px 20px 20px; }
-  .view{ display:none; animation:fadein .25s ease; }
-  .view.active{ display:block; }
-  @keyframes fadein{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
-
-  /* ---- Board ---- */
-  .column{ margin-bottom:22px; }
-  .column-head{
-    display:flex; align-items:center; gap:8px;
-    margin-bottom:10px;
-    padding-left:2px;
-  }
-  .column-head .dot{ width:8px; height:8px; border-radius:50%; }
-  .column-head h2{ font-size:14px; margin:0; text-transform:uppercase; letter-spacing:.08em; color:var(--mist); font-weight:600; }
-  .column-head .count{ font-size:12px; color:var(--mist); margin-left:auto; }
-
-  .col-todo .dot{ background:var(--mist); }
-  .col-doing .dot{ background:var(--ember); }
-  .col-done .dot{ background:var(--moss); }
-
-  .cards{ display:flex; flex-direction:column; gap:10px; }
-  .card{
-    background:var(--ink-soft);
-    border-radius:var(--radius);
-    padding:14px 16px;
-    border:1px solid transparent;
-    cursor:pointer;
-    transition:transform .12s ease, border-color .12s ease;
-  }
-  .card:active{ transform:scale(0.98); }
-  .card.doing{ border-color:var(--ember-dim); }
-  .card-title{ font-size:15.5px; font-weight:500; line-height:1.35; }
-  .card-title.done{ text-decoration:line-through; color:var(--mist); }
-  .card-meta{ display:flex; align-items:center; gap:8px; margin-top:8px; }
-  .badge{
-    font-size:11.5px; padding:3px 8px; border-radius:100px;
-    background:var(--ink-softer); color:var(--mist);
-  }
-  .badge.over{ background:#3a3320; color:var(--signal); }
-  .badge.due{ background:var(--ink-softer); color:var(--mist); }
-  .badge.due.due-soon{ background:#3a3320; color:var(--signal); }
-  .badge.due.due-overdue{ background:#40241f; color:#ff9d85; }
-
-  .empty{
-    color:var(--mist); font-size:13.5px;
-    padding:16px 2px; line-height:1.5;
-  }
-
-  .fab{
-    position:fixed;
-    right:calc(20px + max(0px, (100vw - 480px)/2));
-    bottom:calc(90px + env(safe-area-inset-bottom));
-    width:56px; height:56px; border-radius:50%;
-    background:var(--ember); color:var(--ink);
-    border:none; font-size:28px; font-weight:600;
-    display:flex; align-items:center; justify-content:center;
-    box-shadow:0 8px 24px rgba(255,133,82,.35);
-    z-index:20;
-  }
-  .fab:active{ transform:scale(0.94); }
-
-  /* ---- Nav ---- */
-  nav.tabs{
-    position:fixed; left:0; right:0; bottom:0;
-    background:rgba(27,31,59,0.92);
-    backdrop-filter:blur(14px);
-    border-top:1px solid var(--ink-softer);
-    display:flex;
-    padding-bottom:env(safe-area-inset-bottom);
-    z-index:10;
-  }
-  nav.tabs .wrap{ max-width:480px; margin:0 auto; display:flex; width:100%; }
-  nav.tabs button{
-    flex:1; background:none; border:none; color:var(--mist);
-    font-family:'Inter'; font-size:12px; font-weight:500;
-    padding:12px 0 10px; display:flex; flex-direction:column; align-items:center; gap:5px;
-  }
-  nav.tabs button svg{ width:22px; height:22px; }
-  nav.tabs button.active{ color:var(--paper); }
-  nav.tabs button.active svg{ stroke:var(--ember); }
-
-  /* ---- Focus view ---- */
-  .focus-wrap{ display:flex; flex-direction:column; align-items:center; padding-top:18px; }
-  .ring-holder{ position:relative; width:250px; height:250px; margin:6px 0 22px; }
-  .ring-holder svg{ width:100%; height:100%; transform:rotate(-90deg); }
-  .ring-track{ fill:none; stroke:var(--ink-softer); stroke-width:14; }
-  .ring-progress{ fill:none; stroke:var(--ember); stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke .3s ease; }
-  .ring-progress.break{ stroke:var(--moss); }
-  .ring-center{
-    position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:4px;
-  }
-  .ring-time{ font-size:42px; font-weight:600; letter-spacing:-0.02em; }
-  .ring-label{ font-size:12.5px; color:var(--mist); text-transform:uppercase; letter-spacing:.08em; }
-
-  .focus-task{
-    font-size:16px; font-weight:500; text-align:center;
-    max-width:280px; min-height:24px; margin-bottom:4px;
-  }
-  .focus-hint{ font-size:13px; color:var(--mist); text-align:center; max-width:280px; margin-bottom:22px; }
-  .focus-hint button.link{
-    background:none; border:none; color:var(--ember); font-weight:600;
-    font-size:13px; padding:0; text-decoration:underline;
-  }
-
-  .chip-row{ display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap; justify-content:center; }
-  .chip{
-    background:var(--ink-soft); color:var(--mist); border:1px solid var(--ink-softer);
-    padding:7px 14px; border-radius:100px; font-size:13px; font-weight:500;
-  }
-  .chip.active{ background:var(--ember); color:var(--ink); border-color:var(--ember); }
-  .chip:disabled{ opacity:.5; }
-
-  .focus-controls{ display:flex; gap:12px; margin-bottom:26px; }
-  .btn{
-    font-family:'Inter'; font-weight:600; font-size:14.5px;
-    padding:13px 26px; border-radius:100px; border:none;
-  }
-  .btn-primary{ background:var(--ember); color:var(--ink); }
-  .btn-ghost{ background:var(--ink-soft); color:var(--paper); border:1px solid var(--ink-softer); }
-  .btn:active{ transform:scale(0.96); }
-
-  .session-count{ font-size:13px; color:var(--mist); }
-  .session-count b{ color:var(--paper); }
-
-  /* ---- Sheet / modal ---- */
-  .scrim{
-    position:fixed; inset:0; background:rgba(10,12,26,.55);
-    display:none; align-items:flex-end; z-index:30;
-  }
-  .scrim.show{ display:flex; }
-  .sheet{
-    background:var(--ink-soft);
-    width:100%; max-width:480px; margin:0 auto;
-    border-radius:24px 24px 0 0;
-    padding:22px 20px calc(24px + env(safe-area-inset-bottom));
-    animation:slideup .22s ease;
-  }
-  @keyframes slideup{ from{ transform:translateY(30px); opacity:0;} to{ transform:none; opacity:1;} }
-  .sheet h3{ margin:0 0 16px; font-size:17px; }
-  .field{ margin-bottom:14px; }
-  .field label{ display:block; font-size:12.5px; color:var(--mist); margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; }
-  .field input, .field textarea, .field select{
-    width:100%; background:var(--ink); border:1px solid var(--ink-softer);
-    color:var(--paper); border-radius:12px; padding:12px 14px;
-    font-family:'Inter'; font-size:15px; resize:none;
-  }
-  .field input:focus, .field textarea:focus, .field select:focus{ outline:2px solid var(--ember); outline-offset:1px; }
-  .field select{ appearance:none; -webkit-appearance:none; }
-  .sheet-actions{ display:flex; gap:10px; margin-top:6px; }
-  .sheet-actions .btn{ flex:1; }
-  .sheet-secondary-row{ display:flex; gap:10px; margin-top:10px; }
-  .sheet-secondary-row .btn{ flex:1; padding:11px; font-size:13.5px; }
-  .btn-danger{ background:transparent; color:#e08a7a; border:1px solid var(--ink-softer); }
-
-  .nudge{
-    background:var(--ink-softer); border-radius:14px; padding:12px 14px;
-    font-size:13px; color:var(--mist); margin-top:4px; margin-bottom:10px;
-    line-height:1.5; display:none;
-  }
-  .nudge.show{ display:block; }
-  .nudge b{ color:var(--paper); }
-
-  .toast{
-    position:fixed; left:50%; bottom:100px; transform:translateX(-50%);
-    background:var(--paper); color:var(--ink); font-size:13.5px; font-weight:500;
-    padding:10px 18px; border-radius:100px; z-index:40;
-    opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
-  }
-  .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
-
-  ::selection{ background:var(--ember); color:var(--ink); }
-  button:focus-visible, input:focus-visible, textarea:focus-visible{ outline:2px solid var(--ember); outline-offset:2px; }
-
-  @media (prefers-reduced-motion: reduce){
-    *{ animation:none !important; transition:none !important; }
-  }
+:root{
+  --ink: #1B1F3B;
+  --ink-soft: #262B4D;
+  --ink-softer: #323863;
+  --paper: #F7F5F0;
+  --ember: #FF8552;
+  --ember-dim: #7a4736;
+  --moss: #7FA68C;
+  --signal: #FFD166;
+  --mist: #A8AEC1;
+  --radius: 18px;
+  --daily: #7FBF8E;
+  --weekly: #6FA8DC;
+  --monthly: #B18CE0;
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:var(--ink);
+  color:var(--paper);
+  font-family:'Inter',sans-serif;
+  overscroll-behavior:none;
+  min-height:100vh;
+  min-height:100dvh;
+}
+h1,h2,h3,.display{ font-family:'Space Grotesk',sans-serif; }
+.mono{ font-family:'IBM Plex Mono',monospace; }
+#app{
+  max-width:480px;
+  margin:0 auto;
+  min-height:100vh;
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  padding-bottom:calc(74px + env(safe-area-inset-bottom));
+}
+header.top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px 20px 12px;
+}
+header.top .brand{ display:flex; align-items:center; gap:10px; }
+header.top .mark{
+  width:26px;height:26px;border-radius:50%;
+  background:conic-gradient(var(--ember) 0 65%, var(--ink-softer) 65% 100%);
+  position:relative; flex-shrink:0;
+}
+header.top .mark::after{ content:""; position:absolute; inset:6px; background:var(--paper); border-radius:50%; }
+header.top .brand-name{ font-size:19px; font-weight:700; letter-spacing:-0.01em; }
+header.top .date{ font-size:13px; color:var(--mist); }
+main{ flex:1; padding:4px 20px 20px; }
+.view{ display:none; animation:fadein .25s ease; }
+.view.active{ display:block; }
+@keyframes fadein{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+/* ---- Task lists (Daily / Weekly / Monthly / one-off) ---- */
+.list-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; padding-left:2px; }
+.list-head .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.dot-daily{ background:var(--daily); }
+.dot-weekly{ background:var(--weekly); }
+.dot-monthly{ background:var(--monthly); }
+.list-head h2{ font-size:14px; margin:0; text-transform:uppercase; letter-spacing:.08em; color:var(--mist); font-weight:600; }
+.list-head .count{ font-size:12px; color:var(--mist); margin-left:auto; }
+.list-hint{ font-size:12.5px; color:var(--mist); margin:-4px 0 14px 2px; line-height:1.5; }
+.cards{ display:flex; flex-direction:column; gap:10px; }
+.card-wrap{ position:relative; border-radius:var(--radius); overflow:hidden; }
+.card-swipe-bg{
+  position:absolute; inset:0; color:var(--ink);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  font-weight:700; font-size:14px; opacity:0; pointer-events:none;
+}
+.card-swipe-bg svg{ width:20px; height:20px; }
+.card-swipe-bg.accent-daily{ background:var(--daily); }
+.card-swipe-bg.accent-weekly{ background:var(--weekly); }
+.card-swipe-bg.accent-monthly{ background:var(--monthly); }
+.card-swipe-bg.accent-oneoff{ background:var(--moss); }
+.card{
+  position:relative;
+  background:var(--ink-soft);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  border:1px solid transparent;
+  border-left:3px solid transparent;
+  touch-action:pan-y;
+  will-change:transform;
+}
+.card.accent-daily{ border-left-color:var(--daily); }
+.card.accent-weekly{ border-left-color:var(--weekly); }
+.card.accent-monthly{ border-left-color:var(--monthly); }
+.card.accent-oneoff{ border-left-color:var(--ember); }
+.card-title{ font-size:15.5px; font-weight:500; line-height:1.35; }
+.card-meta{ display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
+.badge{ font-size:11.5px; padding:3px 8px; border-radius:100px; background:var(--ink-softer); color:var(--mist); }
+.badge.due{ background:var(--ink-softer); color:var(--mist); }
+.badge.due.due-soon{ background:#3a3320; color:var(--signal); }
+.badge.due.due-overdue{ background:#40241f; color:#ff9d85; }
+.badge.paused{ background:transparent; border:1px solid var(--ink-softer); color:var(--mist); font-style:italic; }
+.empty{ color:var(--mist); font-size:13.5px; padding:16px 2px; line-height:1.5; }
+.fab{
+  position:fixed;
+  right:calc(20px + max(0px, (100vw - 480px)/2));
+  bottom:calc(90px + env(safe-area-inset-bottom));
+  width:56px; height:56px; border-radius:50%;
+  background:var(--ember); color:var(--ink);
+  border:none; font-size:28px; font-weight:600;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 24px rgba(255,133,82,.35);
+  z-index:20;
+}
+.fab:active{ transform:scale(0.94); }
+/* ---- Bottom nav ---- */
+nav.tabs{
+  position:fixed; left:0; right:0; bottom:0;
+  background:rgba(27,31,59,0.92);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--ink-softer);
+  display:flex;
+  padding-bottom:env(safe-area-inset-bottom);
+  z-index:10;
+}
+nav.tabs .wrap{ max-width:480px; margin:0 auto; display:flex; width:100%; }
+nav.tabs button{
+  flex:1; background:none; border:none; color:var(--mist);
+  font-family:'Inter'; font-size:11.5px; font-weight:500;
+  padding:12px 0 10px; display:flex; flex-direction:column; align-items:center; gap:5px;
+}
+nav.tabs button svg{ width:21px; height:21px; }
+nav.tabs button.active{ color:var(--paper); }
+nav.tabs button.active svg{ stroke:var(--ember); }
+nav.tabs button.active[data-view="daily"]{ color:var(--daily); }
+nav.tabs button.active[data-view="daily"] svg{ stroke:var(--daily); }
+nav.tabs button.active[data-view="weekly"]{ color:var(--weekly); }
+nav.tabs button.active[data-view="weekly"] svg{ stroke:var(--weekly); }
+nav.tabs button.active[data-view="monthly"]{ color:var(--monthly); }
+nav.tabs button.active[data-view="monthly"] svg{ stroke:var(--monthly); }
+/* ---- Focus tab: sub-toggle + timer ---- */
+.focus-toggle{ display:flex; gap:8px; margin-bottom:18px; }
+.sub-btn{
+  flex:1; background:var(--ink-soft); color:var(--mist); border:1px solid var(--ink-softer);
+  padding:10px; border-radius:100px; font-family:'Inter'; font-weight:600; font-size:13.5px;
+}
+.sub-btn.active{ background:var(--ember); color:var(--ink); border-color:var(--ember); }
+.focus-sub{ display:none; }
+.focus-sub.active{ display:block; }
+.focus-wrap{ display:flex; flex-direction:column; align-items:center; padding-top:6px; }
+.ring-holder{ position:relative; width:250px; height:250px; margin:6px 0 22px; }
+.ring-holder svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.ring-track{ fill:none; stroke:var(--ink-softer); stroke-width:14; }
+.ring-progress{ fill:none; stroke:var(--ember); stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke .3s ease; }
+.ring-progress.break{ stroke:var(--moss); }
+.ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+.ring-time{ font-size:42px; font-weight:600; letter-spacing:-0.02em; }
+.ring-label{ font-size:12.5px; color:var(--mist); text-transform:uppercase; letter-spacing:.08em; }
+.focus-task{ font-size:16px; font-weight:500; text-align:center; max-width:280px; min-height:24px; margin-bottom:4px; }
+.focus-hint{ font-size:13px; color:var(--mist); text-align:center; max-width:280px; margin-bottom:22px; }
+.focus-hint button.link{ background:none; border:none; color:var(--ember); font-weight:600; font-size:13px; padding:0; text-decoration:underline; }
+.chip-row{ display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap; justify-content:center; }
+.chip{ background:var(--ink-soft); color:var(--mist); border:1px solid var(--ink-softer); padding:7px 14px; border-radius:100px; font-size:13px; font-weight:500; }
+.chip.active{ background:var(--ember); color:var(--ink); border-color:var(--ember); }
+.chip:disabled{ opacity:.5; }
+.focus-controls{ display:flex; gap:12px; margin-bottom:26px; }
+.btn{ font-family:'Inter'; font-weight:600; font-size:14.5px; padding:13px 26px; border-radius:100px; border:none; }
+.btn-primary{ background:var(--ember); color:var(--ink); }
+.btn-ghost{ background:var(--ink-soft); color:var(--paper); border:1px solid var(--ink-softer); }
+.btn:active{ transform:scale(0.96); }
+.session-count{ font-size:13px; color:var(--mist); text-align:center; }
+.session-count b{ color:var(--paper); }
+/* ---- Sheet / modal ---- */
+.scrim{ position:fixed; inset:0; background:rgba(10,12,26,.55); display:none; align-items:flex-end; z-index:30; }
+.scrim.show{ display:flex; }
+.sheet{
+  background:var(--ink-soft); width:100%; max-width:480px; margin:0 auto;
+  border-radius:24px 24px 0 0; padding:22px 20px calc(24px + env(safe-area-inset-bottom));
+  animation:slideup .22s ease; max-height:88vh; overflow-y:auto;
+}
+@keyframes slideup{ from{ transform:translateY(30px); opacity:0;} to{ transform:none; opacity:1;} }
+.sheet h3{ margin:0 0 4px; font-size:17px; }
+.sheet .subhead{ font-size:12.5px; color:var(--mist); margin:0 0 16px; }
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:12.5px; color:var(--mist); margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; }
+.field input, .field textarea{
+  width:100%; background:var(--ink); border:1px solid var(--ink-softer);
+  color:var(--paper); border-radius:12px; padding:12px 14px;
+  font-family:'Inter'; font-size:15px; resize:none;
+}
+.field input:focus, .field textarea:focus{ outline:2px solid var(--ember); outline-offset:1px; }
+.sheet-actions{ display:flex; gap:10px; margin-top:6px; }
+.sheet-actions .btn{ flex:1; }
+.sheet-secondary-row{ display:flex; gap:10px; margin-top:10px; }
+.sheet-secondary-row .btn{ flex:1; padding:11px; font-size:13.5px; }
+.btn-danger{ background:transparent; color:#e08a7a; border:1px solid var(--ink-softer); }
+.toast{
+  position:fixed; left:50%; bottom:100px; transform:translateX(-50%);
+  background:var(--paper); color:var(--ink); font-size:13.5px; font-weight:500;
+  padding:10px 18px; border-radius:100px; z-index:40;
+  opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+::selection{ background:var(--ember); color:var(--ink); }
+button:focus-visible, input:focus-visible, textarea:focus-visible{ outline:2px solid var(--ember); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
 <div id="app">
-
-  <header class="top">
-    <div class="brand">
-      <div class="mark"></div>
-      <div class="brand-name">Squig</div>
-    </div>
-    <div class="date" id="todayLabel"></div>
-  </header>
-
-  <main>
-
-    <!-- BOARD -->
-    <section class="view active" id="view-board">
-
-      <div class="column col-todo">
-        <div class="column-head"><span class="dot"></span><h2>To start</h2><span class="count" id="count-todo">0</span></div>
-        <div class="cards" id="cards-todo"></div>
-      </div>
-
-      <div class="column col-doing">
-        <div class="column-head"><span class="dot"></span><h2>Doing</h2><span class="count" id="count-doing">0</span></div>
-        <div class="cards" id="cards-doing"></div>
-      </div>
-
-      <div class="column col-done">
-        <div class="column-head"><span class="dot"></span><h2>Done</h2><span class="count" id="count-done">0</span></div>
-        <div class="cards" id="cards-done"></div>
-      </div>
-
-    </section>
-
-    <!-- FOCUS -->
-    <section class="view" id="view-focus">
-      <div class="focus-wrap">
-
-        <div class="ring-holder">
-          <svg viewBox="0 0 240 240">
-            <circle class="ring-track" cx="120" cy="120" r="105"></circle>
-            <circle class="ring-progress" id="ringProgress" cx="120" cy="120" r="105"
-              stroke-dasharray="659.7" stroke-dashoffset="0"></circle>
-          </svg>
-          <div class="ring-center">
-            <div class="ring-time mono" id="ringTime">25:00</div>
-            <div class="ring-label" id="ringLabel">Focus</div>
-          </div>
-        </div>
-
-        <div class="focus-task" id="focusTaskName">No task selected</div>
-        <div class="focus-hint" id="focusHint">
-          Pick something from your board, or just start the timer —
-          <button class="link" id="pickTaskBtn">choose a task</button>
-        </div>
-
-        <div class="chip-row" id="durationChips">
-          <button class="chip active" data-min="25">25 min</button>
-          <button class="chip" data-min="50">50 min</button>
-          <button class="chip" data-min="10">10 min</button>
-          <button class="chip" data-min="5" data-break="1">5 min break</button>
-        </div>
-
-        <div class="focus-controls">
-          <button class="btn btn-primary" id="startPauseBtn">Start</button>
-          <button class="btn btn-ghost" id="resetBtn">Reset</button>
-        </div>
-
-        <div class="session-count"><b id="sessionCount">0</b> focus sessions today</div>
-      </div>
-    </section>
-
-  </main>
-
-  <button class="fab" id="fabAdd" aria-label="Add task">+</button>
-
-  <nav class="tabs">
-    <div class="wrap">
-      <button class="tab-btn active" data-view="board">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="6" height="16" rx="1.5"/><rect x="9.5" y="4" width="6" height="10" rx="1.5"/><rect x="16" y="4" width="5" height="7" rx="1.5"/></svg>
-        Board
-      </button>
-      <button class="tab-btn" data-view="focus">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v4.7l3 2" stroke-linecap="round"/></svg>
-        Focus
-      </button>
-    </div>
-  </nav>
-
-  <!-- Add task sheet -->
-  <div class="scrim" id="addScrim">
-    <div class="sheet">
-      <h3>New task</h3>
-      <div class="field">
-        <label for="taskTitle">What's the task?</label>
-        <input id="taskTitle" type="text" placeholder="e.g. Reply to landlord email" maxlength="120">
-      </div>
-      <div class="field">
-        <label for="taskEstimate">Time estimate (minutes)</label>
-        <input id="taskEstimate" type="number" inputmode="numeric" placeholder="15" min="1" max="480">
-      </div>
-      <div class="field">
-        <label for="taskDue">Due &amp; remind me (optional)</label>
-        <input id="taskDue" type="datetime-local">
-      </div>
-      <div class="field">
-        <label for="taskRepeat">Repeat</label>
-        <select id="taskRepeat">
-          <option value="">Doesn't repeat</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
-      </div>
-      <div class="sheet-actions">
-        <button class="btn btn-ghost" id="cancelAdd">Cancel</button>
-        <button class="btn btn-primary" id="saveAdd">Add task</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Task detail sheet -->
-  <div class="scrim" id="detailScrim">
-    <div class="sheet">
-      <h3 id="detailTitle">Task</h3>
-      <div id="detailMeta" class="focus-hint" style="text-align:left; margin-bottom:14px; max-width:none;"></div>
-      <div class="field">
-        <label for="detailDue">Due &amp; remind me</label>
-        <input id="detailDue" type="datetime-local">
-      </div>
-      <div class="field">
-        <label for="detailRepeat">Repeat</label>
-        <select id="detailRepeat">
-          <option value="">Doesn't repeat</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
-      </div>
-      <div class="sheet-secondary-row" style="margin-top:0; margin-bottom:14px;">
-        <button class="btn btn-ghost" id="saveDetailDue">Save</button>
-        <button class="btn btn-ghost" id="clearDetailDue">Clear due date</button>
-      </div>
-      <div class="nudge" id="doingNudge"></div>
-      <div class="sheet-actions" id="moveActions"></div>
-      <div class="sheet-secondary-row">
-        <button class="btn btn-ghost" id="startFocusFromDetail">Start focus session</button>
-        <button class="btn btn-danger" id="deleteTask">Delete</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast"></div>
-
+<header class="top">
+<div class="brand">
+<div class="mark"></div>
+<div class="brand-name">Squig</div>
 </div>
-
+<div class="date" id="todayLabel"></div>
+</header>
+<main>
+<!-- DAILY -->
+<section class="view active" id="view-daily">
+<div class="list-head"><span class="dot dot-daily"></span><h2>Daily</h2><span class="count" id="count-daily">0</span></div>
+<div class="list-hint">Swipe done to clear it — it'll quietly come back tomorrow.</div>
+<div class="cards" id="cards-daily"></div>
+</section>
+<!-- WEEKLY -->
+<section class="view" id="view-weekly">
+<div class="list-head"><span class="dot dot-weekly"></span><h2>Weekly</h2><span class="count" id="count-weekly">0</span></div>
+<div class="list-hint">Swipe done to clear it — it'll come back next week.</div>
+<div class="cards" id="cards-weekly"></div>
+</section>
+<!-- MONTHLY -->
+<section class="view" id="view-monthly">
+<div class="list-head"><span class="dot dot-monthly"></span><h2>Monthly</h2><span class="count" id="count-monthly">0</span></div>
+<div class="list-hint">Swipe done to clear it — it'll come back next month.</div>
+<div class="cards" id="cards-monthly"></div>
+</section>
+<!-- FOCUS: one-off tasks + Pomodoro timer -->
+<section class="view" id="view-focus">
+<div class="focus-toggle">
+<button class="sub-btn active" data-sub="tasks">Tasks</button>
+<button class="sub-btn" data-sub="timer">Timer</button>
+</div>
+<div class="focus-sub active" id="sub-tasks">
+<div class="list-head"><h2>One-off tasks</h2><span class="count" id="count-oneoff">0</span></div>
+<div class="list-hint">Things that need a chunk of time, not a repeat schedule. Swipe done to clear one.</div>
+<div class="cards" id="cards-oneoff"></div>
+</div>
+<div class="focus-sub" id="sub-timer">
+<div class="focus-wrap">
+<div class="ring-holder">
+<svg viewBox="0 0 240 240">
+<circle class="ring-track" cx="120" cy="120" r="105"></circle>
+<circle class="ring-progress" id="ringProgress" cx="120" cy="120" r="105"
+stroke-dasharray="659.7" stroke-dashoffset="0"></circle>
+</svg>
+<div class="ring-center">
+<div class="ring-time mono" id="ringTime">25:00</div>
+<div class="ring-label" id="ringLabel">Focus</div>
+</div>
+</div>
+<div class="focus-task" id="focusTaskName">No task selected</div>
+<div class="focus-hint" id="focusHint">
+Pick a one-off task, or just start the timer —
+<button class="link" id="pickTaskBtn">choose a task</button>
+</div>
+<div class="chip-row" id="durationChips">
+<button class="chip active" data-min="25">25 min</button>
+<button class="chip" data-min="50">50 min</button>
+<button class="chip" data-min="10">10 min</button>
+<button class="chip" data-min="5" data-break="1">5 min break</button>
+</div>
+<div class="focus-controls">
+<button class="btn btn-primary" id="startPauseBtn">Start</button>
+<button class="btn btn-ghost" id="resetBtn">Reset</button>
+</div>
+<div class="session-count"><b id="sessionCount">0</b> focus sessions today</div>
+</div>
+</div>
+</section>
+</main>
+<button class="fab" id="fabAdd" aria-label="Add task">+</button>
+<nav class="tabs">
+<div class="wrap">
+<button class="tab-btn active" data-view="daily">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+Daily
+</button>
+<button class="tab-btn" data-view="weekly">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><rect x="5" y="12.5" width="14" height="3" rx="1" fill="currentColor" stroke="none" opacity=".55"/></svg>
+Weekly
+</button>
+<button class="tab-btn" data-view="monthly">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle cx="7.5" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="16.5" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="7.5" cy="17.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="17.5" r="1" fill="currentColor" stroke="none"/></svg>
+Monthly
+</button>
+<button class="tab-btn" data-view="focus">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v4.7l3 2" stroke-linecap="round"/></svg>
+Focus
+</button>
+</div>
+</nav>
+<!-- Add task sheet -->
+<div class="scrim" id="addScrim">
+<div class="sheet">
+<h3 id="addTitle">New task</h3>
+<div class="subhead" id="addSubhead"></div>
+<div class="field">
+<label for="taskTitle">What's the task?</label>
+<input id="taskTitle" type="text" placeholder="e.g. Reply to landlord email" maxlength="120">
+</div>
+<div class="field" id="estimateField">
+<label for="taskEstimate">Time estimate (minutes, optional)</label>
+<input id="taskEstimate" type="number" inputmode="numeric" placeholder="15" min="1" max="480">
+</div>
+<div class="field">
+<label for="taskDue" id="dueLabel">Due &amp; remind me (optional)</label>
+<input id="taskDue" type="datetime-local">
+</div>
+<div class="sheet-actions">
+<button class="btn btn-ghost" id="cancelAdd">Cancel</button>
+<button class="btn btn-primary" id="saveAdd">Add task</button>
+</div>
+</div>
+</div>
+<!-- Task detail sheet -->
+<div class="scrim" id="detailScrim">
+<div class="sheet">
+<h3 id="detailTitle">Task</h3>
+<div id="detailMeta" class="focus-hint" style="text-align:left; margin-bottom:14px; max-width:none;"></div>
+<div class="field">
+<label for="detailDue" id="detailDueLabel">Due &amp; remind me</label>
+<input id="detailDue" type="datetime-local">
+</div>
+<div class="sheet-secondary-row" id="detailDueActions" style="margin-top:0; margin-bottom:16px;">
+<button class="btn btn-ghost" id="saveDetailDue">Save</button>
+<button class="btn btn-ghost" id="clearDetailDue">Clear due date</button>
+</div>
+<div class="sheet-actions">
+<button class="btn btn-primary" id="completeTaskBtn">Mark complete</button>
+<button class="btn btn-ghost" id="startFocusFromDetail">Start focus session</button>
+</div>
+<div class="sheet-secondary-row">
+<button class="btn btn-danger" id="deleteTask" style="flex:none; width:100%;">Delete</button>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+</div>
 <script>
 (function(){
-  "use strict";
+"use strict";
 
-  /* ---------- storage ---------- */
-  const STORE_KEY = "squig.tasks.v1";
-  const SESS_KEY = "squig.sessions.v1";
+/* ---------- storage ---------- */
+const STORE_KEY = "squig.tasks.v2";
+const SESS_KEY = "squig.sessions.v1";
+function load(key, fallback){
+  try{ const v = JSON.parse(localStorage.getItem(key)); return v || fallback; }
+  catch(e){ return fallback; }
+}
+function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
-  function load(key, fallback){
-    try{ const v = JSON.parse(localStorage.getItem(key)); return v || fallback; }
-    catch(e){ return fallback; }
+// One-time migration from older Lanturn/Squig shapes so nobody loses tasks.
+(function migrateOldData(){
+  if(localStorage.getItem(STORE_KEY) !== null) return;
+  const oldSessions = localStorage.getItem('lanturn.sessions.v1');
+  if(oldSessions !== null && localStorage.getItem(SESS_KEY) === null){
+    localStorage.setItem(SESS_KEY, oldSessions);
   }
-  function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+  const oldTasksRaw = localStorage.getItem('squig.tasks.v1') || localStorage.getItem('lanturn.tasks.v1');
+  if(!oldTasksRaw) return;
+  try{
+    const oldTasks = JSON.parse(oldTasksRaw) || [];
+    const migrated = oldTasks
+      .filter(t => t.column !== 'done')
+      .map(t => ({
+        id: t.id, title: t.title, estimateMin: t.estimateMin || null,
+        createdAt: t.createdAt || new Date().toISOString(),
+        dueAt: t.dueAt || null, notifyCount: t.notified ? 1 : 0, repeat: t.repeat || null
+      }));
+    save(STORE_KEY, migrated);
+  }catch(e){ /* leave fresh */ }
+})();
 
-  // One-time migration: carry over data from the old "Lanturn" name so
-  // nobody loses tasks when the app updates on their phone.
-  (function migrateFromLanturn(){
-    if(localStorage.getItem(STORE_KEY) !== null) return; // already migrated
-    const oldTasks = localStorage.getItem('lanturn.tasks.v1');
-    const oldSessions = localStorage.getItem('lanturn.sessions.v1');
-    if(oldTasks !== null) localStorage.setItem(STORE_KEY, oldTasks);
-    if(oldSessions !== null) localStorage.setItem(SESS_KEY, oldSessions);
-  })();
+let tasks = load(STORE_KEY, []);
+let sessions = load(SESS_KEY, []);
 
-  let tasks = load(STORE_KEY, []);
-  let sessions = load(SESS_KEY, []); // {date:'YYYY-MM-DD', focusCompleted:bool}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
 
-  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-  function todayStr(){ return new Date().toISOString().slice(0,10); }
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
+}
 
-  /* ---------- toast ---------- */
-  let toastTimer;
-  function toast(msg){
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
-  }
+/* ---------- header date ---------- */
+document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined,{ weekday:'short', month:'short', day:'numeric' });
 
-  /* ---------- header date ---------- */
-  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined,{ weekday:'short', month:'short', day:'numeric' });
-
-  /* ---------- tabs ---------- */
-  const views = { board: document.getElementById('view-board'), focus: document.getElementById('view-focus') };
-  document.querySelectorAll('.tab-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      Object.values(views).forEach(v=>v.classList.remove('active'));
-      views[btn.dataset.view].classList.add('active');
-    });
+/* ---------- main tabs ---------- */
+const views = {
+  daily: document.getElementById('view-daily'),
+  weekly: document.getElementById('view-weekly'),
+  monthly: document.getElementById('view-monthly'),
+  focus: document.getElementById('view-focus')
+};
+let currentMainTab = 'daily';
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    Object.values(views).forEach(v=>v.classList.remove('active'));
+    views[btn.dataset.view].classList.add('active');
+    currentMainTab = btn.dataset.view;
   });
+});
 
-  /* ---------- render board ---------- */
-  function fmtMin(m){ return m + 'm'; }
+/* ---------- focus sub-toggle (Tasks / Timer) ---------- */
+const focusSubs = { tasks: document.getElementById('sub-tasks'), timer: document.getElementById('sub-timer') };
+function setFocusSub(name){
+  document.querySelectorAll('.sub-btn').forEach(b=> b.classList.toggle('active', b.dataset.sub === name));
+  Object.entries(focusSubs).forEach(([k,el])=> el.classList.toggle('active', k === name));
+}
+document.querySelectorAll('.sub-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> setFocusSub(btn.dataset.sub));
+});
 
-  function minutesSince(iso){
-    return Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+function goToFocusTimer(id){
+  selectedTaskId = id;
+  document.querySelector('.tab-btn[data-view="focus"]').click();
+  setFocusSub('timer');
+  updateFocusTaskLabel();
+}
+
+function fmtMin(m){ return m + 'm'; }
+
+/* ---------- repeat scheduling ---------- */
+function advanceDate(base, repeat){
+  const d = new Date(base);
+  if(repeat === 'daily') d.setDate(d.getDate() + 1);
+  else if(repeat === 'weekly') d.setDate(d.getDate() + 7);
+  else if(repeat === 'monthly') d.setMonth(d.getMonth() + 1);
+  return d;
+}
+
+// If a repeating task was never swiped done, its due date otherwise just
+// sits in the past forever ("was due..."), and its one-time reminder never
+// fires again. This walks it forward — same time of day, next occurrence(s)
+// of its cadence — until it lands on today or later, discarding whatever
+// occurrences were missed, and re-arms the reminder so it notifies again.
+function advanceStaleRepeats(){
+  const startOfToday = new Date();
+  startOfToday.setHours(0,0,0,0);
+  let changed = false;
+  tasks.forEach(t=>{
+    if(!t.repeat || !t.dueAt) return;
+    let due = new Date(t.dueAt);
+    let moved = false;
+    while(due.getTime() < startOfToday.getTime()){
+      due = advanceDate(due, t.repeat);
+      moved = true;
+    }
+    if(moved){
+      t.dueAt = due.toISOString();
+      t.notifyCount = 0;
+      changed = true;
+      scheduleNativeReminders(t);
+    }
+  });
+  return changed;
+}
+
+/* ---------- due dates ---------- */
+const DUE_SOON_MS = 60 * 60 * 1000;
+function fmtDue(iso){
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const tomorrow = new Date(now); tomorrow.setDate(now.getDate()+1);
+  const isTomorrow = d.toDateString() === tomorrow.toDateString();
+  const time = d.toLocaleTimeString(undefined,{ hour:'numeric', minute:'2-digit' });
+  if(sameDay) return 'Today ' + time;
+  if(isTomorrow) return 'Tomorrow ' + time;
+  return d.toLocaleDateString(undefined,{ month:'short', day:'numeric' }) + ' ' + time;
+}
+function dueState(iso){
+  const diff = new Date(iso).getTime() - Date.now();
+  if(diff <= 0) return 'due-overdue';
+  if(diff <= DUE_SOON_MS) return 'due-soon';
+  return '';
+}
+// After the 3rd nag, reminders go quiet — this phrases how long for,
+// based on when the task's next occurrence (if any) will land.
+function pausedUntilText(t){
+  if(t.repeat === 'daily') return 'Reminders paused until tomorrow';
+  if(t.repeat === 'weekly') return 'Reminders paused until next week';
+  if(t.repeat === 'monthly') return 'Reminders paused until next month';
+  return 'Reminders paused for this task';
+}
+// A repeating task's next occurrence is scheduled the moment the current
+// one is swiped done, but stays out of its tab until actually due — so
+// swiping it away makes it genuinely disappear, not just re-date itself.
+function isDueTodayOrPast(iso){
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getTime() <= now.getTime() || d.toDateString() === now.toDateString();
+}
+function isVisible(t){
+  if(!t.repeat || !t.dueAt) return true;
+  return isDueTodayOrPast(t.dueAt);
+}
+function toDatetimeLocalValue(iso){
+  const d = new Date(iso);
+  const pad = n => n.toString().padStart(2,'0');
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate())
+    + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+/* ---------- render ---------- */
+function byDueAsc(a,b){ return new Date(a.dueAt) - new Date(b.dueAt); }
+function byDueThenNewest(a,b){
+  if(a.dueAt && b.dueAt) return new Date(a.dueAt) - new Date(b.dueAt);
+  if(a.dueAt) return -1;
+  if(b.dueAt) return 1;
+  return (b.createdAt || '').localeCompare(a.createdAt || '');
+}
+function render(){
+  const daily = tasks.filter(t=> t.repeat==='daily' && isVisible(t)).sort(byDueAsc);
+  const weekly = tasks.filter(t=> t.repeat==='weekly' && isVisible(t)).sort(byDueAsc);
+  const monthly = tasks.filter(t=> t.repeat==='monthly' && isVisible(t)).sort(byDueAsc);
+  const oneoff = tasks.filter(t=> !t.repeat).sort(byDueThenNewest);
+
+  document.getElementById('count-daily').textContent = daily.length;
+  document.getElementById('count-weekly').textContent = weekly.length;
+  document.getElementById('count-monthly').textContent = monthly.length;
+  document.getElementById('count-oneoff').textContent = oneoff.length;
+
+  renderCards('cards-daily', daily, 'daily', 'Nothing due today. Nice.');
+  renderCards('cards-weekly', weekly, 'weekly', 'Nothing due this week yet.');
+  renderCards('cards-monthly', monthly, 'monthly', 'Nothing due this month yet.');
+  renderCards('cards-oneoff', oneoff, 'oneoff', 'Nothing here yet — tap + whenever you\'re ready.');
+
+  renderTaskPicker();
+  save(STORE_KEY, tasks);
+}
+
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+
+function renderCards(elId, list, accent, emptyText){
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  if(list.length === 0){
+    const p = document.createElement('div');
+    p.className = 'empty';
+    p.textContent = emptyText;
+    el.appendChild(p);
+    return;
   }
+  list.forEach(t=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'card-wrap';
 
-  /* ---------- due dates ---------- */
-  const DUE_SOON_MS = 60 * 60 * 1000; // badge turns amber inside 1 hour
+    const bg = document.createElement('div');
+    bg.className = 'card-swipe-bg accent-' + accent;
+    bg.innerHTML = CHECK_SVG + '<span>Done</span>';
+    wrap.appendChild(bg);
 
-  function fmtDue(iso){
-    const d = new Date(iso);
-    const now = new Date();
-    const sameDay = d.toDateString() === now.toDateString();
-    const tomorrow = new Date(now); tomorrow.setDate(now.getDate()+1);
-    const isTomorrow = d.toDateString() === tomorrow.toDateString();
-    const time = d.toLocaleTimeString(undefined,{ hour:'numeric', minute:'2-digit' });
-    if(sameDay) return 'Today ' + time;
-    if(isTomorrow) return 'Tomorrow ' + time;
-    return d.toLocaleDateString(undefined,{ month:'short', day:'numeric' }) + ' ' + time;
+    const card = document.createElement('div');
+    card.className = 'card accent-' + accent;
+
+    const title = document.createElement('div');
+    title.className = 'card-title';
+    title.textContent = t.title;
+    card.appendChild(title);
+
+    const meta = document.createElement('div');
+    meta.className = 'card-meta';
+    if(t.estimateMin){
+      const badge = document.createElement('span');
+      badge.className = 'badge mono';
+      badge.textContent = '~' + fmtMin(t.estimateMin);
+      meta.appendChild(badge);
+    }
+    if(t.dueAt){
+      const state = dueState(t.dueAt);
+      const due = document.createElement('span');
+      due.className = 'badge due mono' + (state ? ' ' + state : '');
+      due.textContent = (state === 'due-overdue' ? 'was due ' : 'due ') + fmtDue(t.dueAt);
+      meta.appendChild(due);
+
+      if(t.repeat && nagsDueByNow(t) >= MAX_NAGS){
+        const paused = document.createElement('span');
+        paused.className = 'badge paused';
+        paused.textContent = pausedUntilText(t);
+        meta.appendChild(paused);
+      }
+    }
+    card.appendChild(meta);
+
+    wrap.appendChild(card);
+    el.appendChild(wrap);
+
+    attachSwipe(wrap, card, bg, t.id);
+  });
+}
+
+/* ---------- swipe to complete ---------- */
+function attachSwipe(wrap, card, bg, id){
+  const threshold = 88;
+  let startX = 0, startY = 0, dx = 0, dragging = false, decided = false, isHorizontal = false;
+
+  function onDown(e){
+    dragging = true; decided = false; isHorizontal = false; dx = 0;
+    startX = e.clientX; startY = e.clientY;
+    card.style.transition = 'none';
+    try{ card.setPointerCapture(e.pointerId); }catch(err){}
   }
-
-  function dueState(iso){
-    const diff = new Date(iso).getTime() - Date.now();
-    if(diff <= 0) return 'due-overdue';
-    if(diff <= DUE_SOON_MS) return 'due-soon';
-    return '';
+  function onMove(e){
+    if(!dragging) return;
+    const x = e.clientX, y = e.clientY;
+    dx = x - startX;
+    const dy = y - startY;
+    if(!decided){
+      if(Math.abs(dx) > 6 || Math.abs(dy) > 6){
+        decided = true;
+        isHorizontal = Math.abs(dx) > Math.abs(dy);
+      }
+    }
+    if(isHorizontal){
+      if(e.cancelable) e.preventDefault();
+      card.style.transform = 'translateX(' + dx + 'px)';
+      bg.style.opacity = Math.min(Math.abs(dx) / threshold, 1);
+    }
   }
-
-  /* ---------- repeating tasks ---------- */
-  function repeatLabel(r){
-    return r === 'daily' ? 'Daily' : r === 'weekly' ? 'Weekly' : r === 'monthly' ? 'Monthly' : '';
+  function onUp(e){
+    if(!dragging) return;
+    dragging = false;
+    if(isHorizontal && Math.abs(dx) > threshold){
+      card.style.transition = 'transform .18s ease, opacity .18s ease';
+      card.style.transform = 'translateX(' + (dx > 0 ? '110%' : '-110%') + ')';
+      card.style.opacity = '0';
+      setTimeout(()=> completeTask(id), 170);
+    } else if(!isHorizontal && Math.abs(dx) < 6 && Math.abs(e.clientY - startY) < 6){
+      card.style.transition = 'transform .2s ease';
+      card.style.transform = 'translateX(0)';
+      bg.style.opacity = 0;
+      openDetail(id);
+    } else {
+      card.style.transition = 'transform .2s ease';
+      card.style.transform = 'translateX(0)';
+      bg.style.opacity = 0;
+    }
+    dx = 0;
   }
+  card.addEventListener('pointerdown', onDown);
+  card.addEventListener('pointermove', onMove);
+  card.addEventListener('pointerup', onUp);
+  card.addEventListener('pointercancel', onUp);
+}
 
-  function advanceDate(base, repeat){
-    const d = new Date(base);
-    if(repeat === 'daily') d.setDate(d.getDate() + 1);
-    else if(repeat === 'weekly') d.setDate(d.getDate() + 7);
-    else if(repeat === 'monthly') d.setMonth(d.getMonth() + 1);
-    return d;
+/* ---------- complete / delete ---------- */
+function completeTask(id){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  let msg = 'Nice — marked done';
+  cancelNativeReminders(t.id);
+  if(t.repeat){
+    const base = t.dueAt ? new Date(t.dueAt) : new Date();
+    const nextDue = advanceDate(base, t.repeat);
+    const next = {
+      id: uid(), title: t.title, estimateMin: t.estimateMin,
+      createdAt: new Date().toISOString(), dueAt: nextDue.toISOString(),
+      notifyCount: 0, repeat: t.repeat
+    };
+    tasks.push(next);
+    scheduleNativeReminders(next);
+    msg = 'Done · next one queued for ' + fmtDue(nextDue.toISOString());
   }
+  tasks = tasks.filter(x=> x.id !== id);
+  if(selectedTaskId === id){ selectedTaskId = null; updateFocusTaskLabel(); }
+  detailScrim.classList.remove('show');
+  render();
+  toast(msg);
+}
 
-  // datetime-local wants "YYYY-MM-DDTHH:mm" in local time, not UTC ISO
-  function toDatetimeLocalValue(iso){
-    const d = new Date(iso);
-    const pad = n => n.toString().padStart(2,'0');
-    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate())
-      + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+/* ---------- add task (context-aware: daily / weekly / monthly / oneoff) ---------- */
+const addScrim = document.getElementById('addScrim');
+let addContext = 'oneoff';
+const ADD_COPY = {
+  daily: { title:'New daily task', sub:'Repeats every day.', due:'What time, every day?' },
+  weekly: { title:'New weekly task', sub:'Repeats every week.', due:'First occurrence — day & time' },
+  monthly: { title:'New monthly task', sub:'Repeats every month.', due:'First occurrence — date & time' },
+  oneoff: { title:'New task', sub:'A one-off — no repeat.', due:'Due date (optional)' }
+};
+function openAddSheet(ctx){
+  addContext = ctx;
+  const copy = ADD_COPY[ctx];
+  document.getElementById('addTitle').textContent = copy.title;
+  document.getElementById('addSubhead').textContent = copy.sub;
+  document.getElementById('dueLabel').textContent = copy.due;
+  document.getElementById('taskTitle').value = '';
+  document.getElementById('taskEstimate').value = '';
+  document.getElementById('taskDue').value = '';
+  addScrim.classList.add('show');
+  setTimeout(()=> document.getElementById('taskTitle').focus(), 150);
+}
+document.getElementById('fabAdd').addEventListener('click', ()=>{
+  openAddSheet(currentMainTab === 'focus' ? 'oneoff' : currentMainTab);
+});
+document.getElementById('cancelAdd').addEventListener('click', ()=> addScrim.classList.remove('show'));
+addScrim.addEventListener('click', (e)=>{ if(e.target === addScrim) addScrim.classList.remove('show'); });
+document.getElementById('saveAdd').addEventListener('click', ()=>{
+  const title = document.getElementById('taskTitle').value.trim();
+  if(!title){ toast('Give it a name first'); return; }
+  const est = parseInt(document.getElementById('taskEstimate').value, 10);
+  const dueVal = document.getElementById('taskDue').value;
+  const repeat = addContext === 'oneoff' ? null : addContext;
+  if(repeat && !dueVal){ toast('Pick a time so this has something to repeat from'); return; }
+  const dueAt = dueVal ? new Date(dueVal).toISOString() : null;
+  const newTask = {
+    id: uid(),
+    title,
+    estimateMin: (est && est > 0) ? est : null,
+    createdAt: new Date().toISOString(),
+    dueAt,
+    notifyCount: 0,
+    repeat
+  };
+  tasks.push(newTask);
+  addScrim.classList.remove('show');
+  if(currentMainTab === 'focus') setFocusSub('tasks');
+  render();
+  toast('Added');
+  if(dueAt && repeat){
+    ensureNotificationPermission();
+    scheduleNativeReminders(newTask);
   }
+});
 
-  function render(){
-    const cols = { todo:[], doing:[], done:[] };
-    tasks.forEach(t=> cols[t.column].push(t));
-
-    document.getElementById('count-todo').textContent = cols.todo.length;
-    document.getElementById('count-doing').textContent = cols.doing.length;
-    document.getElementById('count-done').textContent = cols.done.length;
-
-    renderColumn('cards-todo', cols.todo, 'Nothing waiting — add something whenever you\'re ready.');
-    renderColumn('cards-doing', cols.doing, 'Nothing in progress. Move a task here when you start it.');
-    renderColumn('cards-done', cols.done, 'Finished tasks land here.');
-
-    renderTaskPicker();
-    save(STORE_KEY, tasks);
+/* ---------- task detail ---------- */
+const detailScrim = document.getElementById('detailScrim');
+let activeTaskId = null;
+function openDetail(id){
+  activeTaskId = id;
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  document.getElementById('detailTitle').textContent = t.title;
+  document.getElementById('detailMeta').textContent = t.estimateMin
+    ? ('Estimated ' + t.estimateMin + ' min')
+    : 'No time estimate';
+  document.getElementById('detailDue').value = t.dueAt ? toDatetimeLocalValue(t.dueAt) : '';
+  document.getElementById('detailDueLabel').textContent = t.repeat
+    ? 'Due & remind me (next occurrence)'
+    : 'Due date';
+  // Clearing the due date on a repeating task would break its schedule,
+  // so that option only shows for one-off tasks.
+  document.getElementById('clearDetailDue').style.display = t.repeat ? 'none' : '';
+  detailScrim.classList.add('show');
+}
+document.getElementById('saveDetailDue').addEventListener('click', ()=>{
+  const t = tasks.find(x=>x.id===activeTaskId);
+  if(!t) return;
+  const val = document.getElementById('detailDue').value;
+  if(!val){ toast('Pick a date and time first'); return; }
+  t.dueAt = new Date(val).toISOString();
+  t.notifyCount = 0;
+  render();
+  if(t.repeat){
+    ensureNotificationPermission();
+    scheduleNativeReminders(t);
   }
+  toast('Saved');
+});
+document.getElementById('clearDetailDue').addEventListener('click', ()=>{
+  const t = tasks.find(x=>x.id===activeTaskId);
+  if(!t) return;
+  t.dueAt = null;
+  t.notifyCount = 0;
+  document.getElementById('detailDue').value = '';
+  render();
+  cancelNativeReminders(t.id);
+  toast('Reminder cleared');
+});
+document.getElementById('completeTaskBtn').addEventListener('click', ()=>{
+  completeTask(activeTaskId);
+});
+document.getElementById('deleteTask').addEventListener('click', ()=>{
+  cancelNativeReminders(activeTaskId);
+  tasks = tasks.filter(t=> t.id !== activeTaskId);
+  if(selectedTaskId === activeTaskId){ selectedTaskId = null; updateFocusTaskLabel(); }
+  detailScrim.classList.remove('show');
+  render();
+  toast('Task deleted');
+});
+document.getElementById('startFocusFromDetail').addEventListener('click', ()=>{
+  const id = activeTaskId;
+  detailScrim.classList.remove('show');
+  goToFocusTimer(id);
+});
+detailScrim.addEventListener('click', (e)=>{ if(e.target === detailScrim) detailScrim.classList.remove('show'); });
 
-  function renderColumn(elId, list, emptyText){
-    const el = document.getElementById(elId);
-    el.innerHTML = '';
-    if(list.length === 0){
-      const p = document.createElement('div');
-      p.className = 'empty';
-      p.textContent = emptyText;
-      el.appendChild(p);
+/* ---------- focus timer ---------- */
+let selectedTaskId = null;
+let durationMin = 25;
+let isBreak = false;
+let remainingSec = durationMin * 60;
+let timerId = null;
+let running = false;
+const RING_CIRC = 2 * Math.PI * 105;
+document.getElementById('ringProgress').setAttribute('stroke-dasharray', RING_CIRC.toFixed(1));
+
+function updateFocusTaskLabel(){
+  const nameEl = document.getElementById('focusTaskName');
+  const hintEl = document.getElementById('focusHint');
+  if(selectedTaskId){
+    const t = tasks.find(x=>x.id===selectedTaskId);
+    if(t){
+      nameEl.textContent = t.title;
+      hintEl.innerHTML = 'Working on this one. <button class="link" id="pickTaskBtn2">Change task</button>';
+      document.getElementById('pickTaskBtn2').addEventListener('click', ()=> setFocusSub('tasks'));
       return;
     }
-    list.slice().reverse().forEach(t=>{
-      const card = document.createElement('div');
-      card.className = 'card' + (t.column==='doing' ? ' doing' : '');
-      card.addEventListener('click', ()=> openDetail(t.id));
-
-      const title = document.createElement('div');
-      title.className = 'card-title' + (t.column==='done' ? ' done' : '');
-      title.textContent = t.title;
-      card.appendChild(title);
-
-      const meta = document.createElement('div');
-      meta.className = 'card-meta';
-      if(t.estimateMin){
-        const badge = document.createElement('span');
-        badge.className = 'badge mono';
-        badge.textContent = '~' + fmtMin(t.estimateMin);
-        meta.appendChild(badge);
-
-        if(t.column === 'doing' && t.startedAt){
-          const elapsed = minutesSince(t.startedAt);
-          if(elapsed > t.estimateMin){
-            const over = document.createElement('span');
-            over.className = 'badge over mono';
-            over.textContent = '+' + (elapsed - t.estimateMin) + 'm over';
-            meta.appendChild(over);
-          }
-        }
-      }
-      if(t.dueAt && t.column !== 'done'){
-        const state = dueState(t.dueAt);
-        const due = document.createElement('span');
-        due.className = 'badge due mono' + (state ? ' ' + state : '');
-        due.textContent = (state === 'due-overdue' ? 'was due ' : 'due ') + fmtDue(t.dueAt);
-        meta.appendChild(due);
-      }
-      if(t.repeat){
-        const rep = document.createElement('span');
-        rep.className = 'badge mono';
-        rep.textContent = '↻ ' + repeatLabel(t.repeat);
-        meta.appendChild(rep);
-      }
-      card.appendChild(meta);
-      el.appendChild(card);
-    });
   }
+  nameEl.textContent = 'No task selected';
+  hintEl.innerHTML = 'Pick a one-off task, or just start the timer — <button class="link" id="pickTaskBtn">choose a task</button>';
+  document.getElementById('pickTaskBtn').addEventListener('click', ()=> setFocusSub('tasks'));
+}
+updateFocusTaskLabel();
 
-  /* ---------- add task ---------- */
-  const addScrim = document.getElementById('addScrim');
-  document.getElementById('fabAdd').addEventListener('click', ()=>{
-    document.getElementById('taskTitle').value = '';
-    document.getElementById('taskEstimate').value = '';
-    document.getElementById('taskDue').value = '';
-    document.getElementById('taskRepeat').value = '';
-    addScrim.classList.add('show');
-    setTimeout(()=> document.getElementById('taskTitle').focus(), 150);
+function fmtTime(sec){
+  const m = Math.floor(sec/60).toString().padStart(2,'0');
+  const s = Math.floor(sec%60).toString().padStart(2,'0');
+  return m + ':' + s;
+}
+function renderRing(){
+  const total = durationMin * 60;
+  const frac = total > 0 ? remainingSec / total : 0;
+  const offset = RING_CIRC * (1 - frac);
+  const ring = document.getElementById('ringProgress');
+  ring.style.strokeDashoffset = offset.toFixed(1);
+  ring.classList.toggle('break', isBreak);
+  document.getElementById('ringTime').textContent = fmtTime(remainingSec);
+  document.getElementById('ringLabel').textContent = isBreak ? 'Break' : 'Focus';
+}
+renderRing();
+
+document.querySelectorAll('.chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    if(running) return;
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    durationMin = parseInt(chip.dataset.min, 10);
+    isBreak = chip.dataset.break === '1';
+    remainingSec = durationMin * 60;
+    renderRing();
   });
-  document.getElementById('cancelAdd').addEventListener('click', ()=> addScrim.classList.remove('show'));
-  addScrim.addEventListener('click', (e)=>{ if(e.target === addScrim) addScrim.classList.remove('show'); });
+});
 
-  document.getElementById('saveAdd').addEventListener('click', ()=>{
-    const title = document.getElementById('taskTitle').value.trim();
-    if(!title){ toast('Give it a name first'); return; }
-    const est = parseInt(document.getElementById('taskEstimate').value, 10);
-    const dueVal = document.getElementById('taskDue').value;
-    const dueAt = dueVal ? new Date(dueVal).toISOString() : null;
-    const repeat = document.getElementById('taskRepeat').value || null;
-    tasks.push({
-      id: uid(),
-      title,
-      estimateMin: (est && est > 0) ? est : null,
-      column: 'todo',
-      createdAt: new Date().toISOString(),
-      startedAt: null,
-      dueAt,
-      notified: false,
-      repeat
-    });
-    addScrim.classList.remove('show');
-    render();
-    toast('Added to To start');
-    if(dueAt) ensureNotificationPermission();
-  });
-
-  /* ---------- task detail / move ---------- */
-  const detailScrim = document.getElementById('detailScrim');
-  let activeTaskId = null;
-
-  function openDetail(id){
-    activeTaskId = id;
-    const t = tasks.find(x=>x.id===id);
-    if(!t) return;
-    document.getElementById('detailTitle').textContent = t.title;
-    document.getElementById('detailMeta').textContent = t.estimateMin
-      ? ('Estimated ' + t.estimateMin + ' min · currently in ' + labelFor(t.column))
-      : ('No time estimate · currently in ' + labelFor(t.column));
-    document.getElementById('detailDue').value = t.dueAt ? toDatetimeLocalValue(t.dueAt) : '';
-    document.getElementById('detailRepeat').value = t.repeat || '';
-
-    const nudge = document.getElementById('doingNudge');
-    const alreadyDoing = tasks.find(x=> x.column==='doing' && x.id !== id);
-    if(t.column !== 'doing' && alreadyDoing){
-      nudge.innerHTML = 'One thing at a time? <b>"'+escapeHtml(alreadyDoing.title)+'"</b> is already in Doing. That\'s okay — you can still move this one too.';
-      nudge.classList.add('show');
-    } else {
-      nudge.classList.remove('show');
-    }
-
-    const actions = document.getElementById('moveActions');
-    actions.innerHTML = '';
-    const order = ['todo','doing','done'];
-    order.forEach(col=>{
-      if(col === t.column) return;
-      const b = document.createElement('button');
-      b.className = 'btn ' + (col==='doing' ? 'btn-primary' : 'btn-ghost');
-      b.textContent = 'Move to ' + labelFor(col);
-      b.addEventListener('click', ()=> moveTask(t.id, col));
-      actions.appendChild(b);
-    });
-
-    detailScrim.classList.add('show');
-  }
-
-  function labelFor(col){ return col==='todo' ? 'To start' : col==='doing' ? 'Doing' : 'Done'; }
-  function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-
-  function moveTask(id, col){
-    const t = tasks.find(x=>x.id===id);
-    if(!t) return;
-    t.column = col;
-    t.startedAt = (col === 'doing') ? new Date().toISOString() : null;
-
-    let msg = 'Moved to ' + labelFor(col);
-    if(col === 'done' && t.repeat){
-      const base = t.dueAt ? new Date(t.dueAt) : new Date();
-      const nextDue = advanceDate(base, t.repeat);
-      tasks.push({
-        id: uid(),
-        title: t.title,
-        estimateMin: t.estimateMin,
-        column: 'todo',
-        createdAt: new Date().toISOString(),
-        startedAt: null,
-        dueAt: nextDue.toISOString(),
-        notified: false,
-        repeat: t.repeat
-      });
-      msg += ' · next one queued for ' + fmtDue(nextDue.toISOString());
-    }
-
-    detailScrim.classList.remove('show');
-    render();
-    toast(msg);
-  }
-
-  document.getElementById('saveDetailDue').addEventListener('click', ()=>{
-    const t = tasks.find(x=>x.id===activeTaskId);
-    if(!t) return;
-    const val = document.getElementById('detailDue').value;
-    const repeat = document.getElementById('detailRepeat').value || null;
-    if(!val && repeat){ toast('Add a due date so repeats have a time to anchor to'); return; }
-    if(!val){ toast('Pick a date and time first'); return; }
-    t.dueAt = new Date(val).toISOString();
-    t.notified = false;
-    t.repeat = repeat;
-    render();
-    ensureNotificationPermission();
-    toast(repeat ? 'Saved · repeats ' + repeatLabel(repeat).toLowerCase() : 'Reminder set');
-  });
-
-  document.getElementById('clearDetailDue').addEventListener('click', ()=>{
-    const t = tasks.find(x=>x.id===activeTaskId);
-    if(!t) return;
-    t.dueAt = null;
-    t.notified = false;
-    t.repeat = null;
-    document.getElementById('detailDue').value = '';
-    document.getElementById('detailRepeat').value = '';
-    render();
-    toast('Reminder cleared');
-  });
-
-  document.getElementById('deleteTask').addEventListener('click', ()=>{
-    tasks = tasks.filter(t=> t.id !== activeTaskId);
-    detailScrim.classList.remove('show');
-    render();
-    toast('Task deleted');
-  });
-
-  document.getElementById('startFocusFromDetail').addEventListener('click', ()=>{
-    selectedTaskId = activeTaskId;
-    detailScrim.classList.remove('show');
-    document.querySelector('.tab-btn[data-view="focus"]').click();
-    updateFocusTaskLabel();
-  });
-
-  detailScrim.addEventListener('click', (e)=>{ if(e.target === detailScrim) detailScrim.classList.remove('show'); });
-
-  /* ---------- focus timer ---------- */
-  let selectedTaskId = null;
-  let durationMin = 25;
-  let isBreak = false;
-  let remainingSec = durationMin * 60;
-  let timerId = null;
-  let running = false;
-
-  const RING_CIRC = 2 * Math.PI * 105;
-  document.getElementById('ringProgress').setAttribute('stroke-dasharray', RING_CIRC.toFixed(1));
-
-  function updateFocusTaskLabel(){
-    const nameEl = document.getElementById('focusTaskName');
-    const hintEl = document.getElementById('focusHint');
-    if(selectedTaskId){
-      const t = tasks.find(x=>x.id===selectedTaskId);
-      if(t){
-        nameEl.textContent = t.title;
-        hintEl.innerHTML = 'Working on this one. <button class="link" id="pickTaskBtn2">Change task</button>';
-        document.getElementById('pickTaskBtn2').addEventListener('click', ()=>{
-          document.querySelector('.tab-btn[data-view="board"]').click();
-        });
-        return;
-      }
-    }
-    nameEl.textContent = 'No task selected';
-    hintEl.innerHTML = 'Pick something from your board, or just start the timer — <button class="link" id="pickTaskBtn">choose a task</button>';
-    document.getElementById('pickTaskBtn').addEventListener('click', ()=>{
-      document.querySelector('.tab-btn[data-view="board"]').click();
-    });
-  }
-  updateFocusTaskLabel();
-
-  function fmtTime(sec){
-    const m = Math.floor(sec/60).toString().padStart(2,'0');
-    const s = Math.floor(sec%60).toString().padStart(2,'0');
-    return m + ':' + s;
-  }
-
-  function renderRing(){
-    const total = durationMin * 60;
-    const frac = total > 0 ? remainingSec / total : 0;
-    const offset = RING_CIRC * (1 - frac);
-    const ring = document.getElementById('ringProgress');
-    ring.style.strokeDashoffset = offset.toFixed(1);
-    ring.classList.toggle('break', isBreak);
-    document.getElementById('ringTime').textContent = fmtTime(remainingSec);
-    document.getElementById('ringLabel').textContent = isBreak ? 'Break' : 'Focus';
+function tick(){
+  remainingSec--;
+  if(remainingSec <= 0){
+    clearInterval(timerId);
+    running = false;
+    remainingSec = 0;
+    renderRing();
+    onSessionComplete();
+    return;
   }
   renderRing();
-
-  document.querySelectorAll('.chip').forEach(chip=>{
-    chip.addEventListener('click', ()=>{
-      if(running) return;
-      document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-      chip.classList.add('active');
-      durationMin = parseInt(chip.dataset.min, 10);
-      isBreak = chip.dataset.break === '1';
-      remainingSec = durationMin * 60;
-      renderRing();
-    });
-  });
-
-  function tick(){
-    remainingSec--;
-    if(remainingSec <= 0){
-      clearInterval(timerId);
-      running = false;
-      remainingSec = 0;
-      renderRing();
-      onSessionComplete();
-      return;
-    }
-    renderRing();
+}
+function onSessionComplete(){
+  document.getElementById('startPauseBtn').textContent = 'Start';
+  if(!isBreak){
+    sessions.push({ date: todayStr() });
+    save(SESS_KEY, sessions);
+    updateSessionCount();
+    toast('Session done. Nicely paced.');
+  } else {
+    toast('Break\'s over, whenever you\'re ready.');
   }
-
-  function onSessionComplete(){
-    document.getElementById('startPauseBtn').textContent = 'Start';
-    if(!isBreak){
-      sessions.push({ date: todayStr() });
-      save(SESS_KEY, sessions);
-      updateSessionCount();
-      toast('Session done. Nicely paced.');
-    } else {
-      toast('Break\'s over, whenever you\'re ready.');
-    }
-    if('vibrate' in navigator){ navigator.vibrate([80,60,80]); }
-  }
-
-  document.getElementById('startPauseBtn').addEventListener('click', function(){
-    if(running){
-      running = false;
-      clearInterval(timerId);
-      this.textContent = 'Start';
-    } else {
-      running = true;
-      this.textContent = 'Pause';
-      timerId = setInterval(tick, 1000);
-    }
-  });
-
-  document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if('vibrate' in navigator){ navigator.vibrate([80,60,80]); }
+}
+document.getElementById('startPauseBtn').addEventListener('click', function(){
+  if(running){
     running = false;
     clearInterval(timerId);
-    remainingSec = durationMin * 60;
-    document.getElementById('startPauseBtn').textContent = 'Start';
-    renderRing();
-  });
-
-  function updateSessionCount(){
-    const count = sessions.filter(s=> s.date === todayStr()).length;
-    document.getElementById('sessionCount').textContent = count;
+    this.textContent = 'Start';
+  } else {
+    running = true;
+    this.textContent = 'Pause';
+    timerId = setInterval(tick, 1000);
   }
-  updateSessionCount();
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  running = false;
+  clearInterval(timerId);
+  remainingSec = durationMin * 60;
+  document.getElementById('startPauseBtn').textContent = 'Start';
+  renderRing();
+});
+function updateSessionCount(){
+  const count = sessions.filter(s=> s.date === todayStr()).length;
+  document.getElementById('sessionCount').textContent = count;
+}
+updateSessionCount();
 
-  /* ---------- task picker fallback (used if user taps 'choose a task' with none in Doing) ---------- */
-  function renderTaskPicker(){
-    // if the previously selected focus task got deleted, clear it
-    if(selectedTaskId && !tasks.find(t=>t.id===selectedTaskId)){
-      selectedTaskId = null;
-      updateFocusTaskLabel();
-    }
+/* ---------- reminders ---------- */
+// Three strikes, escalating tone, then silence until the next occurrence.
+// MAX_NAGS how many times a task will remind. NAG_OFFSETS_MS[i] is how long
+// after dueAt the (i+1)th nag lands — cumulative, not gap-between. So nag 1
+// fires at dueAt, nag 2 at dueAt+30min, nag 3 at dueAt+30min+2hr.
+const MAX_NAGS = 3;
+const NAG_OFFSETS_MS = [0, 30 * 60 * 1000, 30 * 60 * 1000 + 2 * 60 * 60 * 1000];
+
+// Detect whether we're running inside the native Android/iOS shell (Capacitor)
+// vs a plain browser/PWA. On native, @capacitor/local-notifications schedules
+// real OS-level notifications that fire even if the app is fully closed —
+// no npm import needed, Capacitor's runtime bridge exposes it directly on
+// window.Capacitor.Plugins once the plugin is installed + `npx cap sync` has run.
+const Native = (function(){
+  const cap = window.Capacitor;
+  const isNative = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+  const LocalNotifications = (isNative && cap.Plugins) ? cap.Plugins.LocalNotifications : null;
+  return { isNative, LocalNotifications };
+})();
+
+// Capacitor notification IDs must be plain numbers, not our string task IDs.
+// Folds the task id into a stable int, then tags on the attempt (1-3) as
+// the last digit so each task's 3 nags get distinct, deterministic IDs —
+// letting us cancel/reschedule them later without tracking IDs separately.
+function nativeNotifId(taskId, attempt){
+  let h = 0;
+  for(let i=0;i<taskId.length;i++){ h = (h * 31 + taskId.charCodeAt(i)) | 0; }
+  return (Math.abs(h) % 1000000) * 10 + attempt;
+}
+
+// How many of the 3 nags *should* have fired by now, purely from elapsed
+// time since dueAt. This is what the "paused" badge reads — deliberately
+// not tied to a background-JS counter, since on native the OS fires nags
+// independently of whether our JS was ever running to track them.
+function nagsDueByNow(t){
+  if(!t.dueAt) return 0;
+  const elapsed = Date.now() - new Date(t.dueAt).getTime();
+  let count = 0;
+  for(let i=0;i<NAG_OFFSETS_MS.length;i++){ if(elapsed >= NAG_OFFSETS_MS[i]) count++; }
+  return count;
+}
+
+function ensureNotificationPermission(){
+  if(Native.isNative && Native.LocalNotifications){
+    Native.LocalNotifications.requestPermissions().catch(()=>{});
+    return;
   }
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){ Notification.requestPermission(); }
+}
 
-  /* ---------- reminders ---------- */
-  // Best-effort local reminders. These fire while Squig is open (foreground
-  // or backgrounded tab) via the Notification API. True background delivery
-  // when the app is fully closed needs server-sent Push, which isn't
-  // available for a plain static/local-storage app like this one — see
-  // the README for what a v2 with a small backend would add.
-  function ensureNotificationPermission(){
-    if(!('Notification' in window)) return;
-    if(Notification.permission === 'default'){
-      Notification.requestPermission();
-    }
+// attempt is 1, 2, or 3 — the nag number about to fire.
+function reminderCopy(t, attempt){
+  const est = t.estimateMin ? (t.estimateMin + ' min') : 'a few minutes';
+  if(attempt === 1){
+    return {
+      title: 'Squig: ' + t.title,
+      body: t.estimateMin ? ('~' + t.estimateMin + ' min · due ' + fmtDue(t.dueAt)) : ('due ' + fmtDue(t.dueAt))
+    };
   }
+  if(attempt === 2){
+    return {
+      title: 'Squig: ' + t.title,
+      body: "Now let's really get it done."
+    };
+  }
+  return {
+    title: 'Squig',
+    body: "OK, LET'S DO IT RIGHT NOW — IT'S ONLY " + est.toUpperCase() + ' TO GET DONE.'
+  };
+}
 
-  function fireReminder(t){
-    const body = t.estimateMin ? ('~' + t.estimateMin + ' min · was due ' + fmtDue(t.dueAt)) : ('was due ' + fmtDue(t.dueAt));
-    if('Notification' in window && Notification.permission === 'granted'){
-      if(navigator.serviceWorker && navigator.serviceWorker.controller){
-        navigator.serviceWorker.ready.then(reg=>{
-          reg.showNotification('Squig: ' + t.title, { body, icon:'icons/icon-192.png', tag:t.id });
-        }).catch(()=>{ new Notification('Squig: ' + t.title, { body }); });
-      } else {
-        new Notification('Squig: ' + t.title, { body });
-      }
+// Cancels any of this task's 3 nags that are still scheduled natively.
+// Safe to call even if nothing was ever scheduled (e.g. web-only, or a
+// one-off task that never nags in the first place).
+async function cancelNativeReminders(taskId){
+  if(!Native.isNative || !Native.LocalNotifications) return;
+  const ids = [1,2,3].map(a => ({ id: nativeNotifId(taskId, a) }));
+  try{ await Native.LocalNotifications.cancel({ notifications: ids }); }catch(e){}
+}
+
+// Cancels then re-schedules a task's 3 nags at absolute times based on its
+// current dueAt. Call this any time a repeating task's due date is set,
+// edited, or rolled forward. One-off tasks and tasks with no due date get
+// nothing scheduled (they never nag — see checkReminders below).
+async function scheduleNativeReminders(t){
+  if(!Native.isNative || !Native.LocalNotifications) return;
+  await cancelNativeReminders(t.id);
+  if(!t.repeat || !t.dueAt) return;
+  const due = new Date(t.dueAt).getTime();
+  const notifications = [1,2,3].map(attempt=>{
+    const copy = reminderCopy(t, attempt);
+    return {
+      id: nativeNotifId(t.id, attempt),
+      title: copy.title,
+      body: copy.body,
+      schedule: { at: new Date(due + NAG_OFFSETS_MS[attempt-1]) }
+    };
+  }).filter(n => n.schedule.at.getTime() > Date.now()); // skip any that would already be in the past
+  if(notifications.length){
+    try{ await Native.LocalNotifications.schedule({ notifications }); }catch(e){}
+  }
+}
+
+// Web-only fallback: fires a browser Notification (or a toast, if
+// permission was never granted) for whichever nag is due right now.
+// Never runs on native — there, the OS fires scheduled nags independently.
+function fireReminder(t, attempt){
+  const { title, body } = reminderCopy(t, attempt);
+  if('Notification' in window && Notification.permission === 'granted'){
+    if(navigator.serviceWorker && navigator.serviceWorker.controller){
+      navigator.serviceWorker.ready.then(reg=>{
+        reg.showNotification(title, { body, icon:'icons/icon-192.png', tag:t.id });
+      }).catch(()=>{ new Notification(title, { body }); });
     } else {
-      toast('Reminder: ' + t.title);
+      new Notification(title, { body });
     }
-    if('vibrate' in navigator){ navigator.vibrate([80,60,80]); }
+  } else {
+    toast(body);
   }
+  if('vibrate' in navigator){
+    // Escalating buzz: one pulse for the first nag, three sharp ones for the last.
+    navigator.vibrate(attempt >= MAX_NAGS ? [80,60,80,60,80,60,80] : [80,60,80]);
+  }
+}
 
-  function checkReminders(){
-    let changed = false;
+function checkReminders(){
+  let changed = advanceStaleRepeats();
+  if(!Native.isNative){
     tasks.forEach(t=>{
-      if(t.dueAt && !t.notified && t.column !== 'done' && new Date(t.dueAt).getTime() <= Date.now()){
-        fireReminder(t);
-        t.notified = true;
+      if(!t.dueAt || !t.repeat) return; // one-off Focus tasks don't nag — they're meant to be done right away
+      const due = nagsDueByNow(t);
+      const fired = t.notifyCount || 0;
+      if(due > fired && fired < MAX_NAGS){
+        const attempt = fired + 1;
+        fireReminder(t, attempt);
+        t.notifyCount = attempt;
         changed = true;
       }
     });
-    if(changed){ save(STORE_KEY, tasks); render(); }
   }
-  setInterval(checkReminders, 20000);
-  checkReminders();
+  if(changed){ save(STORE_KEY, tasks); }
+  render(); // cheap; keeps due/paused badges fresh even when nothing changed
+}
+setInterval(checkReminders, 20000);
+checkReminders();
 
-  /* ---------- service worker ---------- */
-  if('serviceWorker' in navigator){
-    window.addEventListener('load', ()=>{
-      navigator.serviceWorker.register('sw.js').catch(()=>{});
-    });
+/* ---------- task picker fallback ---------- */
+function renderTaskPicker(){
+  if(selectedTaskId && !tasks.find(t=>t.id===selectedTaskId)){
+    selectedTaskId = null;
+    updateFocusTaskLabel();
   }
+}
 
-  render();
+/* ---------- service worker ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+render();
+
+if(Native.isNative && Native.LocalNotifications){
+  ensureNotificationPermission();
+  tasks.forEach(t=>{ if(t.repeat && t.dueAt) scheduleNativeReminders(t); });
+}
 })();
 </script>
 </body>
